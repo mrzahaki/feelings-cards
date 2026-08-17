@@ -381,16 +381,27 @@
   }
   .checkout-panel h2{font-size:1.5rem; margin-bottom:6px;}
   .checkout-panel .price-big{font-family:'Baloo 2',sans-serif; font-size:2.2rem; color:var(--brown-deep); margin:6px 0 18px;}
-  .widget-frame{
-    border-radius:16px;
-    overflow:hidden;
-    box-shadow:0 6px 20px rgba(62,49,38,.1);
-    margin:0 auto 18px;
-    max-width:410px;
-  }
-  .widget-frame iframe{display:block; width:100%; border:0;}
   .fallback-btn img{height:44px;}
   .fallback-note{font-size:.85rem; color:var(--ink-soft); margin-top:14px;}
+  .pay-btn{
+    width:100%;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:1.15rem;
+    color:#fff;
+    background:var(--brown);
+    border:none;
+    border-radius:100px;
+    padding:16px 20px;
+    cursor:pointer;
+    box-shadow:0 4px 0 var(--brown-deep);
+    transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  }
+  .pay-btn:hover{transform:translateY(2px); box-shadow:0 2px 0 var(--brown-deep);}
+  .pay-btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:0 4px 0 var(--brown-deep);}
+  .status-msg{font-size:.88rem; margin-top:10px; min-height:1.3em; color:var(--ink-soft);}
+  .status-msg.error{color:#B3492E;}
+  .widget-frame{display:none;}
   .format-note{font-size:.85rem; color:var(--ink-soft); margin-bottom:16px; line-height:1.5;}
   footer .footer-note{font-size:.85rem; color:var(--ink-soft); margin-top:6px;}
   .coin-row{
@@ -551,21 +562,15 @@
     <div class="checkout-panel reveal">
       <h2>Get your copy</h2>
       <p class="format-note">You'll get <strong>2 PDF files</strong>: a 30-page version (2 cards/page, saves paper) and a 60-page version (1 card/page, bigger cards, easier to cut). Print whichever suits you.</p>
-      <div class="widget-frame">
-        <iframe src="https://nowpayments.io/embeds/payment-widget?iid=4980064963" width="410" height="696" frameborder="0" scrolling="no" style="overflow-y:hidden;" title="NOWPayments checkout widget">
-          Can't load widget
-        </iframe>
-      </div>
-      <a class="fallback-btn" href="https://nowpayments.io/payment/?iid=4980064963&source=button" target="_blank" rel="noreferrer noopener">
-        <img src="https://nowpayments.io/images/embeds/payments-button-black.svg" alt="Crypto payment button by NOWPayments">
-      </a>
+      <button type="button" id="payBtn" class="pay-btn">Pay $9.99 &amp; get the deck</button>
+      <p class="status-msg" id="payStatus"></p>
       <div class="coin-row">
         <span class="coin-pill">Bitcoin</span>
         <span class="coin-pill">Monero</span>
         <span class="coin-pill">Ethereum</span>
         <span class="coin-pill">+300 more</span>
       </div>
-      <p class="fallback-note">If the widget doesn't load, use the button above — it opens a secure NOWPayments checkout page.</p>
+      <p class="fallback-note">Clicking Pay opens a secure NOWPayments checkout page in a new tab. Each click creates a fresh, one-time invoice for your order.</p>
     </div>
   </div>
 </section>
@@ -664,6 +669,41 @@
     });
   }, { threshold: 0.15 });
   revealEls.forEach(el => io.observe(el));
+
+  // ---- Checkout: create a fresh invoice per click, open it in a new tab ----
+  const CREATE_INVOICE_ENDPOINT = "CREATE_INVOICE_ENDPOINT"; // paste your create-invoice Apps Script URL here
+  const payBtn = document.getElementById('payBtn');
+  const payStatus = document.getElementById('payStatus');
+
+  payBtn.addEventListener('click', async () => {
+    payBtn.disabled = true;
+    payBtn.textContent = 'Fetching checkout…';
+    payStatus.className = 'status-msg';
+    payStatus.textContent = '';
+
+    try {
+      const resp = await fetch(CREATE_INVOICE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+        body: JSON.stringify({})
+      });
+      const data = await resp.json();
+
+      if (data.ok && data.invoice_url) {
+        window.open(data.invoice_url, '_blank', 'noopener,noreferrer');
+        payStatus.textContent = 'Checkout opened in a new tab.';
+      } else {
+        payStatus.className = 'status-msg error';
+        payStatus.textContent = data.error || "Couldn't start checkout — please try again in a moment.";
+      }
+    } catch (err) {
+      payStatus.className = 'status-msg error';
+      payStatus.textContent = 'Network error — please try again, or email mrzahaki2@gmail.com to order directly.';
+    } finally {
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay $9.99 & get the deck';
+    }
+  });
 </script>
 
 </body>
