@@ -1,3 +1,5 @@
-# Printable feelings cards for kids
+# Printable feelings cards for kids 
 
-http://zahak.me/feelings-cards/
+https://mrzahaki.github.io/feelings-cards/ 
+
+
