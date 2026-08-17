@@ -414,6 +414,15 @@
   }
   .email-input:focus{outline:3px solid var(--sky); outline-offset:2px;}
   .widget-frame{display:none;}
+  .widget-frame.active{
+    display:block;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 6px 20px rgba(62,49,38,.1);
+    margin:14px auto;
+    max-width:410px;
+  }
+  .widget-frame.active iframe{display:block; width:100%; height:696px; border:0;}
   .format-note{font-size:.85rem; color:var(--ink-soft); margin-bottom:16px; line-height:1.5;}
   footer .footer-note{font-size:.85rem; color:var(--ink-soft); margin-top:6px;}
   .coin-row{
@@ -577,13 +586,14 @@
       <input type="email" id="buyerEmail" class="email-input" placeholder="you@example.com" required autocomplete="email">
       <button type="button" id="payBtn" class="pay-btn">Pay $9.99 &amp; get the deck</button>
       <p class="status-msg" id="payStatus"></p>
-      <div class="coin-row">
+      <div class="widget-frame" id="widgetFrame"></div>
+      <div class="coin-row" id="coinRow">
         <span class="coin-pill">Bitcoin</span>
         <span class="coin-pill">Monero</span>
         <span class="coin-pill">Ethereum</span>
         <span class="coin-pill">+300 more</span>
       </div>
-      <p class="fallback-note">Clicking Pay opens a secure NOWPayments checkout page in a new tab. Each click creates a fresh, one-time invoice for your order.</p>
+      <p class="fallback-note" id="fallbackNote">Enter your email and click Pay — checkout will appear right here on the page.</p>
     </div>
   </div>
 </section>
@@ -683,11 +693,13 @@
   }, { threshold: 0.15 });
   revealEls.forEach(el => io.observe(el));
 
-  // ---- Checkout: create a fresh invoice per click, open it in a new tab ----
+  // ---- Checkout: create a fresh invoice per click, embed it inline ----
   const CREATE_INVOICE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec";
   const payBtn = document.getElementById('payBtn');
   const payStatus = document.getElementById('payStatus');
   const emailInput = document.getElementById('buyerEmail');
+  const widgetFrame = document.getElementById('widgetFrame');
+  const fallbackNote = document.getElementById('fallbackNote');
 
   payBtn.addEventListener('click', async () => {
     const email = emailInput.value.trim();
@@ -704,6 +716,8 @@
     payBtn.textContent = 'Fetching checkout…';
     payStatus.className = 'status-msg';
     payStatus.textContent = '';
+    widgetFrame.classList.remove('active');
+    widgetFrame.innerHTML = '';
 
     try {
       const resp = await fetch(CREATE_INVOICE_ENDPOINT, {
@@ -713,12 +727,23 @@
       });
       const data = await resp.json();
 
-      if (data.ok && data.invoice_url) {
-        window.open(data.invoice_url, '_blank', 'noopener,noreferrer');
-        payStatus.textContent = 'Checkout opened in a new tab. Your PDFs will be sent to ' + email + ' once payment confirms.';
+      if (data.ok && data.id) {
+        // Embed the checkout inline using the fresh invoice's id — same
+        // embed pattern as the old static widget, just with a dynamic iid.
+        widgetFrame.innerHTML =
+          '<iframe src="https://nowpayments.io/embeds/payment-widget?iid=' + encodeURIComponent(data.id) + '" ' +
+          'width="410" height="696" frameborder="0" scrolling="no" title="NOWPayments checkout">Can\'t load widget</iframe>';
+        widgetFrame.classList.add('active');
+        payBtn.style.display = 'none';
+        emailInput.disabled = true;
+        payStatus.textContent = 'Complete payment below. Your PDFs will be sent to ' + email + ' once it confirms.';
+        fallbackNote.innerHTML = 'Widget not loading? <a href="' + data.invoice_url + '" target="_blank" rel="noreferrer noopener">Open checkout in a new tab instead</a>.';
+        widgetFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         payStatus.className = 'status-msg error';
         payStatus.textContent = data.error || "Couldn't start checkout — please try again in a moment.";
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay $9.99 & get the deck';
       }
     } catch (err) {
       payStatus.className = 'status-msg error';
