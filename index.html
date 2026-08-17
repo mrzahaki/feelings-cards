@@ -401,6 +401,18 @@
   .pay-btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:0 4px 0 var(--brown-deep);}
   .status-msg{font-size:.88rem; margin-top:10px; min-height:1.3em; color:var(--ink-soft);}
   .status-msg.error{color:#B3492E;}
+  .email-input{
+    width:100%;
+    font-family:'Quicksand', sans-serif;
+    font-size:1rem;
+    padding:14px 16px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin-bottom:14px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .email-input:focus{outline:3px solid var(--sky); outline-offset:2px;}
   .widget-frame{display:none;}
   .format-note{font-size:.85rem; color:var(--ink-soft); margin-bottom:16px; line-height:1.5;}
   footer .footer-note{font-size:.85rem; color:var(--ink-soft); margin-top:6px;}
@@ -562,6 +574,7 @@
     <div class="checkout-panel reveal">
       <h2>Get your copy</h2>
       <p class="format-note">You'll get <strong>2 PDF files</strong>: a 30-page version (2 cards/page, saves paper) and a 60-page version (1 card/page, bigger cards, easier to cut). Print whichever suits you.</p>
+      <input type="email" id="buyerEmail" class="email-input" placeholder="you@example.com" required autocomplete="email">
       <button type="button" id="payBtn" class="pay-btn">Pay $9.99 &amp; get the deck</button>
       <p class="status-msg" id="payStatus"></p>
       <div class="coin-row">
@@ -674,8 +687,19 @@
   const CREATE_INVOICE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec";
   const payBtn = document.getElementById('payBtn');
   const payStatus = document.getElementById('payStatus');
+  const emailInput = document.getElementById('buyerEmail');
 
   payBtn.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!emailOk) {
+      payStatus.className = 'status-msg error';
+      payStatus.textContent = 'Please enter a valid email first — that\'s where your PDFs will be sent.';
+      emailInput.focus();
+      return;
+    }
+
     payBtn.disabled = true;
     payBtn.textContent = 'Fetching checkout…';
     payStatus.className = 'status-msg';
@@ -685,13 +709,13 @@
       const resp = await fetch(CREATE_INVOICE_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
-        body: JSON.stringify({})
+        body: JSON.stringify({ email: email })
       });
       const data = await resp.json();
 
       if (data.ok && data.invoice_url) {
         window.open(data.invoice_url, '_blank', 'noopener,noreferrer');
-        payStatus.textContent = 'Checkout opened in a new tab.';
+        payStatus.textContent = 'Checkout opened in a new tab. Your PDFs will be sent to ' + email + ' once payment confirms.';
       } else {
         payStatus.className = 'status-msg error';
         payStatus.textContent = data.error || "Couldn't start checkout — please try again in a moment.";
