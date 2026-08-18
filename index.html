@@ -585,6 +585,163 @@
 
   .reveal{opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease;}
   .reveal.is-visible{opacity:1; transform:translateY(0);}
+
+  /* ---------- Our Story (interactive storybook) ---------- */
+  section.story{padding:62px 0 74px;}
+  .story-lede{max-width:540px; margin:10px auto 0; text-align:center; color:var(--ink-soft);}
+
+  .storybook{max-width:760px; margin:36px auto 0;}
+  .storybook-frame{
+    position:relative;
+    aspect-ratio:3/2;
+    border-radius:30px;
+    overflow:hidden;
+    box-shadow:0 26px 60px rgba(20,14,10,.32);
+    background:#20233c;
+    touch-action:pan-y;
+  }
+  @media (hover:hover) and (pointer:fine){
+    .storybook-frame{cursor:grab;}
+    .storybook-frame:active{cursor:grabbing;}
+  }
+  .storybook :focus-visible{outline-color:#F6D077;}
+  .storybook-frame:focus-visible{outline:3px solid #F6D077; outline-offset:4px;}
+
+  .scene{position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity .65s ease;}
+  .scene.is-active{opacity:1; pointer-events:auto;}
+  .scene-illustration{position:absolute; inset:0; width:100%; height:100%; display:block;}
+
+  .scene--1{background:linear-gradient(180deg,#FCEBD1 0%,#F3CFA0 55%,#E7B37E 100%);
+    --grad-top:rgba(63,38,16,.85); --grad-mid:rgba(63,38,16,.42); --ink:#FFF6E7; --ink-soft:#FBE7C8; --accent:#FFD48A;}
+  .scene--2{background:linear-gradient(180deg,#F1D6B0 0%,#C9B39B 48%,#8E93A6 100%);
+    --grad-top:rgba(13,19,30,.88); --grad-mid:rgba(13,19,30,.48); --ink:#EAF1FB; --ink-soft:#CBDAEE; --accent:#9FC3E8;}
+  .scene--3{background:linear-gradient(180deg,#2E3552 0%,#232A47 55%,#181C33 100%);
+    --grad-top:rgba(16,14,30,.85); --grad-mid:rgba(16,14,30,.42); --ink:#F3ECDE; --ink-soft:#E4DCC9; --accent:#F6D077;}
+  .scene--4{background:linear-gradient(180deg,#34335A 0%,#2A2C4D 60%,#201F3D 100%);
+    --grad-top:rgba(18,16,42,.87); --grad-mid:rgba(18,16,42,.45); --ink:#EAE6FB; --ink-soft:#CFC9EC; --accent:#F6C15C;}
+  .scene--5{background:linear-gradient(180deg,#2B3050 0%,#35314F 55%,#3C2F46 100%);
+    --grad-top:rgba(42,26,14,.86); --grad-mid:rgba(42,26,14,.44); --ink:#FCEFDC; --ink-soft:#EFD8B2; --accent:#F3AB6E;}
+  .scene--6{background:linear-gradient(180deg,#F7D9C4 0%,#F3B79A 45%,#E99B7C 100%);
+    --grad-top:rgba(70,30,20,.8); --grad-mid:rgba(70,30,20,.4); --ink:#FFF1E6; --ink-soft:#FBDAC4; --accent:#FFB48A;}
+  .scene--7{background:linear-gradient(180deg,#FBEFD8 0%,#F6D077 60%,#E3B778 100%);
+    --grad-top:rgba(68,44,14,.8); --grad-mid:rgba(68,44,14,.4); --ink:#FFF7E3; --ink-soft:#F6E2B4; --accent:#FFD98A;}
+
+  .scene-illustration{overflow:hidden;}
+  .scene-photo{
+    position:absolute; inset:-6%; width:112%; height:112%; object-fit:cover; display:block; transform-origin:center;
+    transform:translate3d(var(--px,0px), var(--py,0px), 0);
+  }
+  .scene.is-active .scene-photo{animation:story-kenburns 11s ease-in-out infinite alternate;}
+  @keyframes story-kenburns{
+    0%{transform:translate3d(var(--px,0px), var(--py,0px), 0) scale(1) translate(0,0);}
+    100%{transform:translate3d(var(--px,0px), var(--py,0px), 0) scale(1.08) translate(-1.4%,-1%);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .scene.is-active .scene-photo{animation:none;}
+  }
+
+  .sib{fill:#2B2440; stroke:#FFD9A0; stroke-width:2; stroke-opacity:.55; stroke-linejoin:round;}
+  .scene--2 .sib{stroke:#E7D7BE; stroke-opacity:.4;}
+  .scene--3 .sib, .scene--4 .sib, .scene--5 .sib{fill:#1D1832; stroke:#8AA0D4; stroke-opacity:.5;}
+  .ele{fill:#F3AB8B;}
+  .ele-eye{fill:#2A1B14;}
+  .scribble{fill:none; stroke:#9EA8CE; stroke-width:2.4; stroke-linecap:round; opacity:.55;}
+  .thought-dot{fill:#2A2748; stroke:#8AA0D4; stroke-width:1.4; stroke-opacity:.5;}
+  .cloud{fill:#fff; opacity:.32;}
+  .cloud-storm{fill:#6B7390; opacity:.42;}
+
+  .halo{fill:none; stroke:#E2836B; stroke-width:3; opacity:.3; transform-box:fill-box; transform-origin:center; animation:halo-pulse 2.4s ease-in-out infinite;}
+  @keyframes halo-pulse{0%,100%{opacity:.2; transform:scale(1);} 50%{opacity:.4; transform:scale(1.06);}}
+
+  .weather{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  .story-drop{
+    position:absolute; top:-8%; width:2px; height:44px; border-radius:2px;
+    background:linear-gradient(180deg, rgba(201,215,255,0) 0%, rgba(201,215,255,.6) 100%);
+    transform:rotate(8deg); animation-name:story-rainfall; animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  @keyframes story-rainfall{
+    0%{transform:translateY(-10%) rotate(8deg); opacity:0;}
+    12%{opacity:.75;}
+    100%{transform:translateY(720%) rotate(8deg); opacity:.1;}
+  }
+  .story-star{
+    position:absolute; width:3px; height:3px; border-radius:50%; background:#FCEBD1;
+    animation-name:story-twinkle; animation-timing-function:ease-in-out; animation-iteration-count:infinite;
+  }
+  @keyframes story-twinkle{0%,100%{opacity:.25;} 50%{opacity:1;}}
+  .story-mote{
+    position:absolute; width:5px; height:5px; border-radius:50%; background:#FFE8B0;
+    box-shadow:0 0 6px 2px rgba(255,232,176,.55);
+    animation-name:story-float-mote; animation-timing-function:ease-in-out; animation-iteration-count:infinite;
+  }
+  @keyframes story-float-mote{
+    0%,100%{transform:translateY(0); opacity:.5;}
+    50%{transform:translateY(-14px); opacity:1;}
+  }
+  .story-heart{position:absolute; bottom:36%; font-size:0; animation-name:story-heart-rise; animation-timing-function:ease-in; animation-iteration-count:infinite;}
+  .story-heart svg{width:16px; height:16px; display:block;}
+  @keyframes story-heart-rise{
+    0%{transform:translateY(0) scale(.8); opacity:0;}
+    15%{opacity:.9;}
+    100%{transform:translateY(-140px) scale(1.05); opacity:0;}
+  }
+  .rays{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  .story-ray{
+    position:absolute; top:-10%; width:60px; height:160%;
+    background:linear-gradient(180deg, rgba(255,232,176,.32), rgba(255,232,176,0));
+    transform-origin:top center;
+  }
+
+  .scene-copy{
+    position:absolute; left:0; right:0; top:0;
+    padding:24px 30px 64px;
+    background:linear-gradient(180deg, var(--grad-top, rgba(18,14,24,.82)) 0%, var(--grad-mid, rgba(18,14,24,.4)) 62%, rgba(18,14,24,0) 100%);
+    color:var(--ink, #FBF3E4);
+    transition:background .5s ease, color .5s ease;
+  }
+  .scene-count{
+    display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent, #F6D077); margin-bottom:8px; transition:color .5s ease;
+  }
+  .scene-title{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.35rem; margin:0 0 8px; color:var(--ink, #fff);}
+  .scene-text{font-size:.98rem; line-height:1.55; max-width:46ch; margin:0; color:var(--ink-soft, #F3ECDE);}
+
+  .story-arrow{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:42px; height:42px; border-radius:50%;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.4);
+    backdrop-filter:blur(6px);
+    color:#fff; font-size:1.15rem; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease, opacity .15s ease;
+    z-index:5;
+  }
+  .story-arrow:hover{background:rgba(255,255,255,.3);}
+  .story-arrow:disabled{opacity:.28; cursor:default;}
+  .story-prev{left:14px;}
+  .story-next{right:14px;}
+
+  .storybook-controls{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:16px; flex-wrap:wrap;}
+  .story-dots{display:flex; gap:8px; padding:0; margin:0;}
+  .story-dots .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--line); border:none; padding:0; cursor:pointer;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .story-dots .dot.active{background:var(--brown); transform:scale(1.25);}
+  .story-skip{
+    font-size:.85rem; font-weight:700; color:var(--brown-deep); text-decoration:none;
+    border-bottom:2px solid var(--yellow); padding-bottom:1px;
+  }
+  .story-skip:hover{border-color:var(--brown-deep);}
+
+  @media (max-width:640px){
+    .storybook-frame{aspect-ratio:4/3; border-radius:22px;}
+    .scene-copy{padding:20px 20px 44px;}
+    .scene-title{font-size:1.15rem;}
+    .scene-text{font-size:.92rem;}
+    .story-arrow{width:36px; height:36px; font-size:1rem;}
+  }
 </style>
 </head>
 <body>
@@ -608,6 +765,7 @@
     <div class="nav-links">
       <a class="nav-link" href="#gallery">Sample cards</a>
       <a class="nav-link" href="#feelings-wheel">What's inside</a>
+      <a class="nav-link" href="#our-story">Our story</a>
     </div>
     <a class="nav-cta" href="#checkout">Get the PDF</a>
   </div>
@@ -739,6 +897,127 @@
       <div class="reveal">
         <h3>What payment methods work?</h3>
         <p>Bitcoin, Monero, Ethereum, and 300+ other cryptocurrencies via NOWPayments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="story" id="our-story">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">✦ A note from the maker ✦</span>
+      <h2>Why Feelings &amp; Friends exists</h2>
+      <p class="story-lede">A true, short story about a closed door, a little sister, and the one question that finally got through. Click through it, or use the arrows.</p>
+    </div>
+
+    <div class="storybook reveal">
+      <div class="storybook-frame" id="storyFrame" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Our story, 7 chapters">
+        <div class="storybook-stage" id="storyStage">
+
+          <article class="scene scene--1 is-active" data-scene="1" aria-hidden="false">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/01.jpeg" alt="The brother walking through their sunlit home with his little sister trailing close behind, reaching for his sleeve" loading="eager">
+            </div>
+            <div class="weather" data-weather="motes"></div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 1 of 7</span>
+              <h3 class="scene-title">Two of Us</h3>
+              <p class="scene-text">She trailed me through every room — kitchen, porch, whatever hallway I wandered into. Sunlit days, small footsteps close behind. I didn't yet know what quiet would sound like without them.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--2" data-scene="2" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/02.jpeg" alt="The brother standing alone in a dim doorway with storm clouds gathering outside the window, tense and worried" loading="lazy">
+            </div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 2 of 7</span>
+              <h3 class="scene-title">Then, Overnight</h3>
+              <p class="scene-text">One test result, and the house rearranged itself around a line neither of us could cross. Clouds gathered over the doorway. Outside, everything looked exactly the same.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--3" data-scene="3" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/03.jpeg" alt="The little sister crying alone on one side of a closed door at night while her brother sits silently on the other side, a sliver of warm light between them" loading="lazy">
+            </div>
+            <div class="weather" data-weather="stars"></div>
+            <div class="weather" data-weather="rain"></div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 3 of 7</span>
+              <h3 class="scene-title">The Door Between Us</h3>
+              <p class="scene-text">Quarantine meant nothing to her. A closed door meant everything. Some nights the rain slipped in anyway, under the door, into the space between us — and we each sat with it, one on either side.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--4" data-scene="4" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/04.jpeg" alt="The little sister sitting alone at night, puzzled, with scribbled thought-clouds and a glowing question mark above her head" loading="lazy">
+            </div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 4 of 7</span>
+              <h3 class="scene-title">No Words For It</h3>
+              <p class="scene-text">She had no word yet for missing, or fear, or a house that stopped making sense. Just static — small hands over small ears, a question mark where an answer should be.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--5" data-scene="5" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/05.jpeg" alt="The brother listening to his little sister as she talks through her plush elephant, lamp glowing warmly beside them" loading="lazy">
+            </div>
+            <div class="weather" data-weather="stars"></div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 5 of 7</span>
+              <h3 class="scene-title">A Different Way In</h3>
+              <p class="scene-text">One night, out of questions, I asked her elephant how he was doing instead. The room went still. Then she told me everything — through him, at length, completely true.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--6" data-scene="6" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/06.jpeg" alt="The brother and sister standing together in an open doorway with warm light streaming in and plush animals around their feet" loading="lazy">
+            </div>
+            <div class="rays">
+              <span class="story-ray" style="left:14%; transform:rotate(12deg);"></span>
+              <span class="story-ray" style="left:46%; transform:rotate(-6deg);"></span>
+              <span class="story-ray" style="left:78%; transform:rotate(16deg);"></span>
+            </div>
+            <div class="weather" data-weather="hearts"></div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 6 of 7</span>
+              <h3 class="scene-title">Coming Back Together</h3>
+              <p class="scene-text">When the door opened, the house let out a breath it had been holding. We kept the animals anyway — small worries wearing fur and feathers, easier to hold than our own.</p>
+            </div>
+          </article>
+
+          <article class="scene scene--7" data-scene="7" aria-hidden="true">
+            <div class="scene-illustration">
+              <img class="scene-photo" src="images/story/07.jpeg" alt="Small plush animal toys arranged on a table, with the faded silhouette of the brother and sister walking hand in hand in the hazy background" loading="lazy">
+            </div>
+            <div class="weather" data-weather="motes"></div>
+            <div class="scene-copy">
+              <span class="scene-count">Chapter 7 of 7</span>
+              <h3 class="scene-title">Why These Cards Exist</h3>
+              <p class="scene-text">Feelings &amp; Friends began behind that door. Every card still asks its question through an animal — the same doorway I found by accident, propped open now for anyone else who needs it.</p>
+            </div>
+          </article>
+
+        </div>
+        <button type="button" class="story-arrow story-prev" id="storyPrev" aria-label="Previous chapter" disabled>‹</button>
+        <button type="button" class="story-arrow story-next" id="storyNext" aria-label="Next chapter">›</button>
+      </div>
+
+      <div class="storybook-controls">
+        <div class="story-dots" id="storyDots" role="tablist" aria-label="Story chapters">
+          <button type="button" class="dot active" role="tab" aria-selected="true" aria-label="Chapter 1: Two of Us"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 2: Then, Overnight"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 3: The Door Between Us"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 4: No Words For It"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 5: A Different Way In"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 6: Coming Back Together"></button>
+          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 7: Why These Cards Exist"></button>
+        </div>
+        <a href="#checkout" class="story-skip">Skip to the cards →</a>
       </div>
     </div>
   </div>
@@ -992,6 +1271,157 @@
       payBtn.textContent = 'Pay $9.99 & get the deck';
     }
   });
+</script>
+
+<script>
+  // ---- Our Story: illustrated storybook ----
+  (function(){
+    const stage = document.getElementById('storyStage');
+    if(!stage) return;
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function rand(min, max){ return min + Math.random() * (max - min); }
+
+    function spawnRain(container, count){
+      if(prefersReduced) return;
+      for(let i = 0; i < count; i++){
+        const d = document.createElement('span');
+        d.className = 'story-drop';
+        d.style.left = rand(2, 96) + '%';
+        d.style.animationDuration = rand(0.9, 1.7).toFixed(2) + 's';
+        d.style.animationDelay = '-' + rand(0, 1.7).toFixed(2) + 's';
+        container.appendChild(d);
+      }
+    }
+    function spawnStars(container, count){
+      for(let i = 0; i < count; i++){
+        const s = document.createElement('span');
+        s.className = 'story-star';
+        s.style.left = rand(4, 96) + '%';
+        s.style.top = rand(4, 42) + '%';
+        if(prefersReduced){
+          s.style.opacity = '.7';
+        } else {
+          s.style.animationDuration = rand(1.8, 3.4).toFixed(2) + 's';
+          s.style.animationDelay = '-' + rand(0, 3).toFixed(2) + 's';
+        }
+        container.appendChild(s);
+      }
+    }
+    function spawnMotes(container, count){
+      for(let i = 0; i < count; i++){
+        const m = document.createElement('span');
+        m.className = 'story-mote';
+        m.style.left = rand(8, 92) + '%';
+        m.style.top = rand(26, 74) + '%';
+        if(prefersReduced){
+          m.style.opacity = '.8';
+        } else {
+          m.style.animationDuration = rand(2.4, 4).toFixed(2) + 's';
+          m.style.animationDelay = '-' + rand(0, 4).toFixed(2) + 's';
+        }
+        container.appendChild(m);
+      }
+    }
+    function spawnHearts(container, count){
+      if(prefersReduced) return;
+      for(let i = 0; i < count; i++){
+        const h = document.createElement('span');
+        h.className = 'story-heart';
+        h.style.left = rand(28, 68) + '%';
+        h.style.animationDuration = rand(3, 4.6).toFixed(2) + 's';
+        h.style.animationDelay = '-' + rand(0, 4.6).toFixed(2) + 's';
+        h.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.2C.6 8.6 2.2 5 6 5c2 0 3.4 1 4 2.4C10.6 6 12 5 14 5c3.8 0 5.4 3.6 4 6.8-2.5 4.6-10 9.2-10 9.2z" fill="#F3AB8B"/></svg>';
+        container.appendChild(h);
+      }
+    }
+
+    stage.querySelectorAll('.weather[data-weather]').forEach(el => {
+      const kind = el.dataset.weather;
+      if(kind === 'rain')   spawnRain(el, 22);
+      if(kind === 'stars')  spawnStars(el, 9);
+      if(kind === 'motes')  spawnMotes(el, 6);
+      if(kind === 'hearts') spawnHearts(el, 4);
+    });
+
+    // ---- navigation ----
+    const scenes  = Array.from(stage.querySelectorAll('.scene'));
+    const dots    = Array.from(document.querySelectorAll('#storyDots .dot'));
+    const prevBtn = document.getElementById('storyPrev');
+    const nextBtn = document.getElementById('storyNext');
+    const frame   = document.getElementById('storyFrame');
+    const total   = scenes.length;
+    let storyIdx  = 0;
+
+    function renderStory(){
+      scenes.forEach((s, i) => {
+        const active = i === storyIdx;
+        s.classList.toggle('is-active', active);
+        s.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      dots.forEach((d, i) => {
+        const active = i === storyIdx;
+        d.classList.toggle('active', active);
+        d.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      prevBtn.disabled = storyIdx === 0;
+      nextBtn.disabled = storyIdx === total - 1;
+    }
+    function goToScene(n){
+      storyIdx = Math.max(0, Math.min(total - 1, n));
+      renderStory();
+    }
+
+    prevBtn.addEventListener('click', () => goToScene(storyIdx - 1));
+    nextBtn.addEventListener('click', () => goToScene(storyIdx + 1));
+    dots.forEach((d, i) => d.addEventListener('click', () => goToScene(i)));
+
+    frame.addEventListener('keydown', e => {
+      if(e.key === 'ArrowRight'){ e.preventDefault(); goToScene(storyIdx + 1); }
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); goToScene(storyIdx - 1); }
+    });
+
+    let storyTouchX = null;
+    frame.addEventListener('touchstart', e => { storyTouchX = e.touches[0].clientX; }, {passive:true});
+    frame.addEventListener('touchend', e => {
+      if(storyTouchX === null) return;
+      const dx = e.changedTouches[0].clientX - storyTouchX;
+      if(Math.abs(dx) > 40){ dx < 0 ? goToScene(storyIdx + 1) : goToScene(storyIdx - 1); }
+      storyTouchX = null;
+    }, {passive:true});
+
+    // ---- gentle parallax tilt on hover (desktop only) ----
+    const canHover = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    if(canHover && !prefersReduced){
+      let rafId = null, targetX = 0, targetY = 0, curX = 0, curY = 0;
+
+      function tick(){
+        curX += (targetX - curX) * 0.12;
+        curY += (targetY - curY) * 0.12;
+        const activePhoto = scenes[storyIdx] && scenes[storyIdx].querySelector('.scene-photo');
+        if(activePhoto){
+          activePhoto.style.setProperty('--px', curX.toFixed(2) + 'px');
+          activePhoto.style.setProperty('--py', curY.toFixed(2) + 'px');
+        }
+        rafId = requestAnimationFrame(tick);
+      }
+
+      frame.addEventListener('mousemove', e => {
+        const rect = frame.getBoundingClientRect();
+        const relX = (e.clientX - rect.left) / rect.width - 0.5;
+        const relY = (e.clientY - rect.top) / rect.height - 0.5;
+        targetX = relX * -14;
+        targetY = relY * -10;
+        if(rafId === null) tick();
+      });
+      frame.addEventListener('mouseleave', () => {
+        targetX = 0; targetY = 0;
+      });
+    }
+
+    renderStory();
+  })();
 </script>
 
 </body>
