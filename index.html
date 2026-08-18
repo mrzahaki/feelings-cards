@@ -97,6 +97,9 @@
     --sky:#95D2E0;
     --sage:#A3C48F;
     --lav:#C7B7E8;
+    --mint:#BFE3D0;
+    --tan:#E3B778;
+    --coral:#F3AB8B;
     --line:#E7E0CC;
     --shadow: 0 10px 30px rgba(62,49,38,.12);
   }
@@ -135,6 +138,18 @@
   }
   .brand{display:flex; align-items:center; gap:10px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.1rem;}
   .brand svg{width:34px;height:34px;flex-shrink:0;}
+  .nav-links{display:flex; gap:22px;}
+  .nav-link{
+    text-decoration:none;
+    font-weight:700;
+    font-size:.92rem;
+    color:var(--ink-soft);
+    padding:8px 2px;
+    border-bottom:2px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .nav-link:hover{color:var(--brown-deep); border-color:var(--tan);}
+  @media (max-width:600px){ .nav-links{display:none;} }
   .nav-cta{
     background:var(--brown);
     color:#fff;
@@ -227,6 +242,17 @@
   .ghost-btn:hover{border-color:var(--brown); background:var(--paper);}
   .price-tag{font-weight:700;}
 
+  .hero-note{margin:16px 0 0; font-size:.92rem; color:var(--ink-soft);}
+  .hero-note a{
+    color:var(--brown-deep);
+    font-weight:700;
+    text-decoration:none;
+    border-bottom:2px solid var(--yellow);
+    padding-bottom:1px;
+    transition:border-color .15s ease;
+  }
+  .hero-note a:hover{border-color:var(--brown-deep);}
+
   /* Capybara mascot */
   .capy-wrap{
     margin:38px auto 0;
@@ -297,6 +323,13 @@
     font-size:.95rem;
   }
   .gallery-more strong{color:var(--brown-deep);}
+  .gallery-more a{
+    color:var(--brown-deep);
+    font-weight:700;
+    text-decoration:underline;
+    text-decoration-color:var(--yellow);
+    text-underline-offset:3px;
+  }
 
   @media (max-width:720px){
     .card-grid{grid-template-columns:repeat(2, 1fr); gap:18px;}
@@ -356,6 +389,110 @@
   @media (max-width:640px){
     .lb-prev{left:6px;} .lb-next{right:6px;}
     .lb-nav{background:rgba(255,254,249,.9);}
+  }
+
+  /* ---------- Feelings wheel ---------- */
+  section.wheel-section{padding:56px 0 66px;}
+  .wheel-stage{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:52px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+
+  .wheel-ring{
+    --radius:150px;
+    position:relative;
+    width:392px; height:392px;
+    flex-shrink:0;
+  }
+  .wheel-hub{
+    position:absolute; inset:0; margin:auto;
+    width:136px; height:136px;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 26%, #fff, var(--paper) 55%, var(--line));
+    border:3px solid var(--paper);
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(62,49,38,.05);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    z-index:2;
+    animation:hub-pulse 2.6s ease-in-out infinite;
+  }
+  .wheel-ring.touched .wheel-hub{animation:none;}
+  @keyframes hub-pulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.045);} }
+  .wheel-hub .hub-icon{font-size:2rem; line-height:1; margin-bottom:2px;}
+  .wheel-hub .hub-num{font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1.9rem; color:var(--brown-deep); line-height:1;}
+  .wheel-hub .hub-label{font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-top:3px;}
+
+  .petal{
+    position:absolute; top:50%; left:50%;
+    width:98px; height:98px;
+    margin:-49px 0 0 -49px;
+    border:none; cursor:pointer;
+    border-radius:44% 56% 52% 48% / 48% 44% 56% 52%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px;
+    font-family:'Quicksand',sans-serif; font-weight:700; font-size:.74rem; color:var(--ink);
+    box-shadow:0 6px 14px rgba(62,49,38,.16);
+    transform:rotate(calc(45deg * var(--i))) translate(0, calc(var(--radius) * -1)) rotate(calc(-45deg * var(--i)));
+    transition:box-shadow .2s ease, filter .2s ease, outline-color .2s ease;
+    z-index:1;
+  }
+  .petal .petal-icon{font-size:1.55rem;}
+  .petal:hover, .petal:focus-visible{
+    filter:brightness(1.06);
+    box-shadow:0 10px 22px rgba(62,49,38,.22);
+  }
+  .petal:hover{ transform:rotate(calc(45deg * var(--i))) translate(0, calc(var(--radius) * -1)) rotate(calc(-45deg * var(--i))) scale(1.08); }
+  .petal.active{
+    outline:3px solid var(--brown-deep); outline-offset:3px;
+    z-index:3;
+    transform:rotate(calc(45deg * var(--i))) translate(0, calc(var(--radius) * -1)) rotate(calc(-45deg * var(--i))) scale(1.1);
+  }
+
+  @media (max-width:560px){
+    .wheel-ring{--radius:106px; width:270px; height:270px;}
+    .wheel-hub{width:100px; height:100px;}
+    .wheel-hub .hub-icon{font-size:1.6rem;}
+    .wheel-hub .hub-num{font-size:1.4rem;}
+    .petal{width:76px; height:76px; margin:-38px 0 0 -38px; font-size:.62rem;}
+    .petal .petal-icon{font-size:1.2rem;}
+  }
+
+  .wheel-detail{flex:1 1 300px; max-width:380px;}
+  .wheel-hint{
+    background:var(--paper);
+    border:1.5px dashed var(--line);
+    border-radius:22px;
+    padding:34px 26px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:.96rem;
+  }
+  .detail-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-top:6px solid var(--brown);
+    border-radius:22px;
+    padding:24px 24px 22px;
+    box-shadow:var(--shadow);
+    animation:card-pop .35s cubic-bezier(.2,.8,.25,1.15);
+  }
+  @keyframes card-pop{ from{opacity:0; transform:translateY(10px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);} }
+  .detail-top{display:flex; align-items:center; gap:14px; margin-bottom:10px;}
+  .detail-icon{font-size:2.1rem; flex-shrink:0;}
+  .detail-top h3{font-size:1.18rem; margin-bottom:3px;}
+  .detail-count{font-size:.76rem; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;}
+  .detail-blurb{font-size:.93rem; color:var(--ink-soft); margin:0 0 14px;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    font-size:.78rem; font-weight:700;
+    padding:5px 13px;
+    border-radius:100px;
+    border:1px solid rgba(62,49,38,.1);
+    color:var(--ink);
   }
 
   /* ---------- About / features ---------- */
@@ -468,6 +605,10 @@
       </svg>
       <span>Feelings &amp; Friends</span>
     </div>
+    <div class="nav-links">
+      <a class="nav-link" href="#gallery">Sample cards</a>
+      <a class="nav-link" href="#feelings-wheel">What's inside</a>
+    </div>
     <a class="nav-cta" href="#checkout">Get the PDF</a>
   </div>
 </nav>
@@ -483,6 +624,7 @@
       </a>
       <a class="ghost-btn" href="#gallery">Peek inside ↓</a>
     </div>
+    <p class="hero-note"><a href="#feelings-wheel">See the 8 feeling families it covers →</a></p>
 
     <div class="capy-wrap">
       <svg viewBox="0 0 240 170" class="float" aria-hidden="true">
@@ -530,7 +672,31 @@
       <!-- thumbs injected by JS -->
     </div>
 
-    <p class="gallery-more">…plus <strong>51 more cards</strong> covering everything from brave lion cubs to jealous jaguars.</p>
+    <p class="gallery-more">…plus <strong>51 more cards</strong> covering everything from brave lion cubs to jealous jaguars — <a href="#feelings-wheel">see the full feelings wheel ↓</a></p>
+  </div>
+</section>
+
+<section class="wheel-section" id="feelings-wheel">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">✦ What's inside ✦</span>
+      <h2>A whole wheel of feelings</h2>
+      <p>The 60 cards sort into 8 feeling families. Tap a petal to see what each one covers — no spoilers on the cards themselves.</p>
+    </div>
+
+    <div class="wheel-stage reveal">
+      <div class="wheel-ring" id="wheelRing">
+        <div class="wheel-hub" id="wheelHub">
+          <span class="hub-num">60</span>
+          <span class="hub-label">feelings</span>
+        </div>
+        <!-- petals injected by JS -->
+      </div>
+
+      <div class="wheel-detail" id="wheelDetail">
+        <div class="wheel-hint">👆 Tap any petal on the wheel — you'll see how many cards are in that family and the range of feelings it opens up.</div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -692,6 +858,79 @@
     });
   }, { threshold: 0.15 });
   revealEls.forEach(el => io.observe(el));
+
+  // ---- Feelings wheel: 60 cards sorted into 8 feeling families ----
+  // Counts/words are drawn straight from the deck's own card titles —
+  // no card art or animal+question pairings shown, just the feelings.
+  const feelingFamilies = [
+    { key:'joy', icon:'🦚', name:'Joyful & Proud', color:'#F6D077', count:10,
+      blurb:"Big smiles and big energy — proud, excited, silly, confident feelings.",
+      words:['Proud','Excited','Silly','Happy','Ready','Hopeful','Hardworking','Confident','Eager','Giggly'] },
+    { key:'love', icon:'🐑', name:'Loving & Kind', color:'#F2B9C4', count:8,
+      blurb:"Warm, connected feelings about family, friends, sharing, and making things right.",
+      words:['Loved','Kind','Loyal','Gentle','Sharing','Affectionate','Sorry','Open-hearted'] },
+    { key:'calm', icon:'🐨', name:'Calm & Cozy', color:'#A3C48F', count:8,
+      blurb:"Slow-breathing, settled feelings — for naptime, quiet time, and taking it easy.",
+      words:['Cozy','Calm','Peaceful','Patient','Thoughtful','Relaxed','Content'] },
+    { key:'brave', icon:'🦁', name:'Brave & Bold', color:'#E3B778', count:6,
+      blurb:"Chin-up feelings for trying hard things and not giving up.",
+      words:['Brave','Free','Determined','Courageous','Resilient','Persistent'] },
+    { key:'curious', icon:'🐱', name:'Curious & Wondering', color:'#95D2E0', count:6,
+      blurb:"Wide-eyed, imaginative feelings about new places, ideas, and questions.",
+      words:['Curious','Wonder','Imaginative','Resourceful','Adventurous'] },
+    { key:'nervous', icon:'🐿️', name:'Nervous & Worried', color:'#C7B7E8', count:7,
+      blurb:"Fluttery-tummy feelings — for when things feel too big, too fast, or too new.",
+      words:['Worried','Nervous','Shy','Careful','Startled','Overwhelmed','Anxious'] },
+    { key:'sad', icon:'🐧', name:'Sad & Lonely', color:'#BFE3D0', count:5,
+      blurb:"Quiet, low feelings — for missing someone, or a day that didn't go as planned.",
+      words:['Alone','Bored','Lonely','Disappointed'] },
+    { key:'big', icon:'🐻', name:'Big Feelings', color:'#F3AB8B', count:10,
+      blurb:"The tricky ones — grumpy, jealous, embarrassed — named gently, without judgment.",
+      words:['Grumpy','Surprised','Jealous','Embarrassed','Regretful','Frustrated','Angry','Confused','Guilty'] }
+  ];
+
+  const wheelRing = document.getElementById('wheelRing');
+  const wheelHub = document.getElementById('wheelHub');
+  const wheelDetail = document.getElementById('wheelDetail');
+
+  feelingFamilies.forEach((f, i) => {
+    const petal = document.createElement('button');
+    petal.type = 'button';
+    petal.className = 'petal';
+    petal.style.setProperty('--i', i);
+    petal.style.background = f.color;
+    petal.dataset.key = f.key;
+    petal.setAttribute('aria-label', f.name + ' — ' + f.count + ' of 60 cards');
+    petal.innerHTML = `<span class="petal-icon" aria-hidden="true">${f.icon}</span><span>${f.name.split(' ')[0]}</span>`;
+    petal.addEventListener('click', () => selectFamily(f, petal));
+    wheelRing.appendChild(petal);
+  });
+
+  function selectFamily(f, petal){
+    wheelRing.classList.add('touched');
+    document.querySelectorAll('.petal').forEach(p => p.classList.remove('active'));
+    petal.classList.add('active');
+
+    wheelHub.innerHTML = `
+      <span class="hub-icon" aria-hidden="true">${f.icon}</span>
+      <span class="hub-num">${f.count}</span>
+      <span class="hub-label">cards</span>`;
+
+    wheelDetail.innerHTML = `
+      <div class="detail-card" style="border-top-color:${f.color};">
+        <div class="detail-top">
+          <span class="detail-icon" aria-hidden="true">${f.icon}</span>
+          <div>
+            <h3>${f.name}</h3>
+            <span class="detail-count">${f.count} of 60 cards</span>
+          </div>
+        </div>
+        <p class="detail-blurb">${f.blurb}</p>
+        <div class="chip-row">
+          ${f.words.map(w => `<span class="chip" style="background:${f.color}66;">${w}</span>`).join('')}
+        </div>
+      </div>`;
+  }
 
   // ---- Checkout: create a fresh invoice per click, embed it inline ----
   const CREATE_INVOICE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec";
