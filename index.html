@@ -587,49 +587,61 @@
   .reveal.is-visible{opacity:1; transform:translateY(0);}
 
   /* ---------- Our Story (interactive storybook) ---------- */
-  section.story{padding:56px 0 60px; overflow:hidden;}
+  section.story{padding:56px 0 84px;}
   .story-lede{max-width:540px; margin:10px auto 0; text-align:center; color:var(--ink-soft);}
 
+  /* Wider "hero" stage — sits outside .wrap so it can breathe past the
+     1040px text column without ever touching the true viewport edge. */
   .storybook{
     position:relative;
-    width:100vw;
-    margin-left:calc(50% - 50vw);
-    margin-right:calc(50% - 50vw);
-    margin-top:40px;
+    width:min(94%, 1180px);
+    margin:36px auto 0;
+    padding-left:max(0px, env(safe-area-inset-left));
+    padding-right:max(0px, env(safe-area-inset-right));
   }
+
   .storybook-frame{
     position:relative;
     width:100%;
-    height:min(84vh, 780px);
-    min-height:460px;
+    aspect-ratio:4/3;
+    border-radius:24px;
     overflow:hidden;
+    box-shadow:0 26px 60px rgba(20,14,10,.32);
     background:#20233c;
     touch-action:pan-y;
     -webkit-user-select:none; user-select:none;
   }
-  .storybook-frame::before{
-    content:"";
-    position:absolute; inset:0 0 auto 0; height:28%;
-    background:linear-gradient(180deg, rgba(10,8,16,.5), rgba(10,8,16,0));
-    z-index:3; pointer-events:none;
+  @media (min-width:560px){ .storybook-frame{aspect-ratio:16/10; border-radius:28px;} }
+  @media (min-width:900px){ .storybook-frame{aspect-ratio:21/10; border-radius:34px;} }
+
+  /* subtle inner edge + bottom vignette so the crop always reads intentional */
+  .storybook-frame::after{
+    content:''; position:absolute; inset:0; border-radius:inherit; z-index:3; pointer-events:none;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -50px 70px -30px rgba(0,0,0,.28);
   }
+
   @media (hover:hover) and (pointer:fine){
     .storybook-frame{cursor:grab;}
-    .storybook-frame:active{cursor:grabbing;}
+    .storybook-frame.is-dragging, .storybook-frame:active{cursor:grabbing;}
   }
   .storybook :focus-visible{outline-color:#F6D077;}
-  .storybook-frame:focus-visible{outline:3px solid #F6D077; outline-offset:-4px;}
+  .storybook-frame:focus-visible{outline:3px solid #F6D077; outline-offset:4px;}
 
-  .scene{
-    position:absolute; inset:0;
-    opacity:0; transform:scale(1.035);
-    pointer-events:none;
-    transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1);
-    will-change:transform, opacity;
-    z-index:1;
+  /* Slide track: real horizontal carousel instead of a stacked crossfade,
+     so drag/swipe feels native. Position is driven entirely by percentages
+     (var(--idx)) so it never needs JS to recompute on resize. */
+  .storybook-stage{
+    position:relative; z-index:1;
+    display:flex; width:100%; height:100%;
+    transform:translateX(calc(-100% * var(--idx, 0) + var(--dragpx, 0px)));
+    transition:transform .5s cubic-bezier(.22,.8,.25,1);
+    will-change:transform;
   }
-  .scene.is-active{opacity:1; transform:scale(1); pointer-events:auto; z-index:2;}
-  .scene-illustration{position:absolute; inset:0; width:100%; height:100%; display:block; overflow:hidden;}
+  .storybook-frame.is-dragging .storybook-stage{transition:none;}
+  @media (prefers-reduced-motion: reduce){ .storybook-stage{transition:none;} }
+
+  .scene{position:relative; flex:0 0 100%; width:100%; height:100%; overflow:hidden;}
+  .scene-illustration{position:absolute; inset:0; width:100%; height:100%; overflow:hidden;}
 
   .scene--1{background:linear-gradient(180deg,#FCEBD1 0%,#F3CFA0 55%,#E7B37E 100%);
     --grad-top:rgba(63,38,16,.85); --grad-mid:rgba(63,38,16,.42); --ink:#FFF6E7; --ink-soft:#FBE7C8; --accent:#FFD48A;}
@@ -646,9 +658,15 @@
   .scene--7{background:linear-gradient(180deg,#FBEFD8 0%,#F6D077 60%,#E3B778 100%);
     --grad-top:rgba(68,44,14,.8); --grad-mid:rgba(68,44,14,.4); --ink:#FFF7E3; --ink-soft:#F6E2B4; --accent:#FFD98A;}
 
+  /* Scenes render as CSS backgrounds, not <img> — nothing for a long-press
+     or drag gesture to grab, no native "save image" affordance. */
   .scene-photo{
-    position:absolute; inset:-6%; width:112%; height:112%; object-fit:cover; display:block; transform-origin:center;
+    position:absolute; inset:-6%; width:112%; height:112%;
+    background-size:cover; background-position:center 38%; background-repeat:no-repeat;
+    transform-origin:center;
     transform:translate3d(var(--px,0px), var(--py,0px), 0);
+    -webkit-user-drag:none; user-select:none; -webkit-touch-callout:none;
+    pointer-events:none;
   }
   .scene.is-active .scene-photo{animation:story-kenburns 12s ease-in-out infinite alternate;}
   @keyframes story-kenburns{
@@ -660,9 +678,19 @@
   }
 
   .sib{fill:#2B2440; stroke:#FFD9A0; stroke-width:2; stroke-opacity:.55; stroke-linejoin:round;}
-  .scene--3 .sib{fill:#1D1832; stroke:#8AA0D4; stroke-opacity:.5;}
+  .scene--2 .sib{stroke:#E7D7BE; stroke-opacity:.4;}
+  .scene--3 .sib, .scene--4 .sib, .scene--5 .sib{fill:#1D1832; stroke:#8AA0D4; stroke-opacity:.5;}
+  .ele{fill:#F3AB8B;}
+  .ele-eye{fill:#2A1B14;}
+  .scribble{fill:none; stroke:#9EA8CE; stroke-width:2.4; stroke-linecap:round; opacity:.55;}
+  .thought-dot{fill:#2A2748; stroke:#8AA0D4; stroke-width:1.4; stroke-opacity:.5;}
+  .cloud{fill:#fff; opacity:.32;}
+  .cloud-storm{fill:#6B7390; opacity:.42;}
 
-  .weather{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1;}
+  .halo{fill:none; stroke:#E2836B; stroke-width:3; opacity:.3; transform-box:fill-box; transform-origin:center; animation:halo-pulse 2.4s ease-in-out infinite;}
+  @keyframes halo-pulse{0%,100%{opacity:.2; transform:scale(1);} 50%{opacity:.4; transform:scale(1.06);}}
+
+  .weather{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   .story-drop{
     position:absolute; top:-8%; width:2px; height:44px; border-radius:2px;
     background:linear-gradient(180deg, rgba(201,215,255,0) 0%, rgba(201,215,255,.6) 100%);
@@ -694,7 +722,7 @@
     15%{opacity:.9;}
     100%{transform:translateY(-140px) scale(1.05); opacity:0;}
   }
-  .rays{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1;}
+  .rays{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   .story-ray{
     position:absolute; top:-10%; width:60px; height:160%;
     background:linear-gradient(180deg, rgba(255,232,176,.32), rgba(255,232,176,0));
@@ -702,97 +730,101 @@
   }
 
   .scene-copy{
-    position:absolute; left:0; right:0; bottom:0;
-    padding:clamp(22px,4vw,44px) clamp(20px,6vw,88px) clamp(64px,9vw,100px);
-    background:linear-gradient(180deg, rgba(18,14,24,0) 0%, var(--grad-mid, rgba(18,14,24,.4)) 40%, var(--grad-top, rgba(18,14,24,.86)) 100%);
+    position:absolute; left:0; right:0; top:0; z-index:2;
+    padding:26px 32px 34px;
+    background:linear-gradient(180deg, var(--grad-top, rgba(18,14,24,.82)) 0%, var(--grad-mid, rgba(18,14,24,.4)) 62%, rgba(18,14,24,0) 100%);
     color:var(--ink, #FBF3E4);
     transition:background .5s ease, color .5s ease;
-    z-index:2;
+    pointer-events:none;
   }
   .scene-count{
-    display:inline-block; font-size:clamp(.68rem,.58rem + .25vw,.82rem); font-weight:700; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--accent, #F6D077); margin-bottom:10px; transition:color .5s ease;
+    display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent, #F6D077); margin-bottom:8px; transition:color .5s ease;
   }
-  .scene-title{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(1.3rem, 1rem + 1.9vw, 2.5rem); margin:0 0 10px; color:var(--ink, #fff); max-width:18ch;}
-  .scene-text{font-size:clamp(.94rem,.86rem + .3vw,1.14rem); line-height:1.6; max-width:54ch; margin:0; color:var(--ink-soft, #F3ECDE);}
+  .scene-title{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.4rem; margin:0 0 8px; color:var(--ink, #fff);}
+  @media (min-width:900px){ .scene-title{font-size:1.6rem;} }
+  .scene-text{font-size:.98rem; line-height:1.55; max-width:46ch; margin:0; color:var(--ink-soft, #F3ECDE);}
 
-  /* ---- progress bar (top of frame, tap any segment to jump) ---- */
-  .story-progress{
-    position:absolute; top:0; left:0; right:0; z-index:4;
-    display:flex; gap:6px;
-    padding:clamp(14px,2.4vw,22px) clamp(16px,4vw,32px) 0;
-  }
-  .progress-seg{
-    flex:1; height:4px; border-radius:3px; padding:0; border:none; cursor:pointer;
-    background:rgba(255,255,255,.28);
-    position:relative; overflow:hidden;
-  }
-  .progress-seg::after{
-    content:""; position:absolute; inset:0; background:#fff; border-radius:inherit;
-    transform:scaleX(0); transform-origin:left; transition:transform .4s ease;
-  }
-  .progress-seg.is-filled::after{transform:scaleX(1);}
-  .progress-seg:hover{background:rgba(255,255,255,.42);}
-
-  /* ---- nav arrows ---- */
   .story-arrow{
     position:absolute; top:50%; transform:translateY(-50%);
-    width:clamp(40px, 3vw + 28px, 58px); height:clamp(40px, 3vw + 28px, 58px); border-radius:50%;
-    background:rgba(20,16,26,.32); border:1px solid rgba(255,255,255,.38);
-    backdrop-filter:blur(8px);
-    color:#fff; font-size:clamp(1.1rem,.9rem + .5vw,1.4rem); line-height:1; cursor:pointer;
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.4);
+    backdrop-filter:blur(6px);
+    color:#fff; font-size:1.2rem; line-height:1; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    transition:background .18s ease, opacity .25s ease, transform .18s ease;
+    transition:background .15s ease, opacity .15s ease, transform .15s ease;
     z-index:5;
   }
-  .story-arrow:hover{background:rgba(20,16,26,.5); transform:translateY(-50%) scale(1.06);}
+  .story-arrow:hover{background:rgba(255,255,255,.32); transform:translateY(-50%) scale(1.06);}
   .story-arrow:active{transform:translateY(-50%) scale(.94);}
-  .story-arrow:disabled{opacity:0; pointer-events:none;}
-  .story-prev{left:clamp(10px,2.5vw,28px);}
-  .story-next{right:clamp(10px,2.5vw,28px);}
-  @media (hover:hover) and (pointer:fine){
-    .story-arrow{opacity:0;}
-    .storybook-frame:hover .story-arrow,
-    .storybook-frame:focus-within .story-arrow{opacity:1;}
-    .story-arrow:disabled{opacity:0 !important;}
-  }
+  .story-arrow:disabled{opacity:0; visibility:hidden;}
+  .story-prev{left:max(14px, env(safe-area-inset-left));}
+  .story-next{right:max(14px, env(safe-area-inset-right));}
 
-  /* ---- tap-to-continue hint ---- */
+  /* one-time swipe cue for touch visitors, fades after first interaction */
   .story-hint{
-    position:absolute; left:50%; bottom:clamp(14px,3vw,26px); transform:translateX(-50%);
-    z-index:4; display:flex; align-items:center; gap:8px;
-    font-size:.78rem; font-weight:700; color:#fff; letter-spacing:.02em;
-    background:rgba(20,16,26,.4); border:1px solid rgba(255,255,255,.3); backdrop-filter:blur(6px);
-    padding:8px 16px; border-radius:999px; pointer-events:none;
-    opacity:1; transition:opacity .6s ease;
-    animation:story-hint-pulse 2.2s ease-in-out infinite;
+    position:absolute; left:50%; bottom:18px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:7px; z-index:6;
+    background:rgba(20,16,10,.55); color:#fff; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+    padding:7px 14px; border-radius:100px; backdrop-filter:blur(6px);
+    opacity:1; transition:opacity .4s ease; pointer-events:none;
   }
+  .story-hint svg{width:14px; height:14px; animation:story-hint-swipe 1.3s ease-in-out infinite;}
   .story-hint.is-hidden{opacity:0;}
-  @keyframes story-hint-pulse{0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-3px);}}
-  @media (prefers-reduced-motion: reduce){
-    .story-hint{animation:none;}
-  }
+  @keyframes story-hint-swipe{0%,100%{transform:translateX(0);} 50%{transform:translateX(6px);}}
+  @media (hover:hover) and (pointer:fine){ .story-hint{display:none;} }
 
   .storybook-controls{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
-    max-width:1040px; margin:18px auto 0; padding:0 24px;
+    margin-top:18px; flex-wrap:wrap;
   }
-  .story-counter{font-size:.85rem; font-weight:700; color:var(--ink-soft);}
+  .story-toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+
+  .story-playtoggle{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0;
+    background:var(--paper); border:1px solid var(--line); color:var(--brown-deep);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .12s ease;
+  }
+  .story-playtoggle svg{width:15px; height:15px; display:block;}
+  .story-playtoggle:hover{border-color:var(--brown); background:#fff;}
+  .story-playtoggle:active{transform:scale(.9);}
+
+  .story-track{display:flex; align-items:center; gap:6px;}
+  .story-seg{
+    width:24px; height:6px; border-radius:100px; padding:0; border:none; cursor:pointer;
+    background:var(--line); position:relative; overflow:hidden;
+    transition:width .25s ease, background .2s ease;
+  }
+  .story-seg::after{
+    content:''; position:absolute; inset:0; background:var(--brown);
+    transform:scaleX(0); transform-origin:left; transition:transform .2s ease;
+  }
+  .story-seg:hover{background:#DED2AF;}
+  .story-seg.active{width:32px;}
+  .story-seg.active::after{transform:scaleX(1);}
+
+  .story-count{
+    font-size:.82rem; font-weight:700; color:var(--ink-soft);
+    white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+
   .story-skip{
     font-size:.85rem; font-weight:700; color:var(--brown-deep); text-decoration:none;
     border-bottom:2px solid var(--yellow); padding-bottom:1px;
   }
   .story-skip:hover{border-color:var(--brown-deep);}
 
-  @media (max-width:900px){
-    .storybook-frame{height:min(70vh,600px); min-height:420px;}
-  }
   @media (max-width:640px){
-    .storybook-frame{height:min(78vh,560px); min-height:400px;}
-    .storybook-frame{height:min(78dvh,560px);}
-    .scene-title{max-width:none;}
-    .story-hint{font-size:.72rem; padding:7px 14px;}
-    .storybook-controls{padding:0 20px;}
+    .scene-copy{padding:20px 20px 30px;}
+    .scene-text{font-size:.92rem;}
+    .story-arrow{width:38px; height:38px; font-size:1.05rem;}
+    .story-track{gap:5px;}
+    .story-seg{width:18px;}
+    .story-seg.active{width:24px;}
+  }
+  @media (max-width:380px){
+    .story-count{display:none;}
   }
 </style>
 </head>
@@ -959,118 +991,131 @@
     <div class="section-head reveal">
       <span class="eyebrow">✦ A note from the maker ✦</span>
       <h2>Why Feelings &amp; Friends exists</h2>
-      <p class="story-lede">A true, short story about a closed door, a little sister, and the one question that finally got through. Click through it, or use the arrows.</p>
+      <p class="story-lede">A true, short story about a closed door, a little sister, and the one question that finally got through. Swipe, drag, or use the arrows.</p>
+    </div>
+  </div>
+
+  <!-- Sits outside .wrap on purpose: lets the stage run wider than the
+       1040px text column below, without ever bleeding to the raw viewport
+       edge (see .storybook width in CSS). -->
+  <div class="storybook reveal">
+    <div class="storybook-frame" id="storyFrame" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Our story, 7 chapters">
+      <div class="storybook-stage" id="storyStage" style="--idx:0;">
+
+        <article class="scene scene--1 is-active" data-scene="1" aria-hidden="false">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/01.jpeg" role="img" aria-label="The brother walking through their sunlit home with his little sister trailing close behind, reaching for his sleeve"></div>
+          </div>
+          <div class="weather" data-weather="motes"></div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 1 of 7</span>
+            <h3 class="scene-title">Two of Us</h3>
+            <p class="scene-text">She trailed me through every room — kitchen, porch, whatever hallway I wandered into. Sunlit days, small footsteps close behind. I didn't yet know what quiet would sound like without them.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--2" data-scene="2" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/02.jpeg" role="img" aria-label="The brother standing alone in a dim doorway with storm clouds gathering outside the window, tense and worried"></div>
+          </div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 2 of 7</span>
+            <h3 class="scene-title">Then, Overnight</h3>
+            <p class="scene-text">One test result, and the house rearranged itself around a line neither of us could cross. Clouds gathered over the doorway. Outside, everything looked exactly the same.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--3" data-scene="3" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/03.jpeg" role="img" aria-label="The little sister crying alone on one side of a closed door at night while her brother sits silently on the other side, a sliver of warm light between them"></div>
+          </div>
+          <div class="weather" data-weather="stars"></div>
+          <div class="weather" data-weather="rain"></div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 3 of 7</span>
+            <h3 class="scene-title">The Door Between Us</h3>
+            <p class="scene-text">Quarantine meant nothing to her. A closed door meant everything. Some nights the rain slipped in anyway, under the door, into the space between us — and we each sat with it, one on either side.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--4" data-scene="4" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/04.jpeg" role="img" aria-label="The little sister sitting alone at night, puzzled, with scribbled thought-clouds and a glowing question mark above her head"></div>
+          </div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 4 of 7</span>
+            <h3 class="scene-title">No Words For It</h3>
+            <p class="scene-text">She had no word yet for missing, or fear, or a house that stopped making sense. Just static — small hands over small ears, a question mark where an answer should be.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--5" data-scene="5" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/05.jpeg" role="img" aria-label="The brother listening to his little sister as she talks through her plush elephant, lamp glowing warmly beside them"></div>
+          </div>
+          <div class="weather" data-weather="stars"></div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 5 of 7</span>
+            <h3 class="scene-title">A Different Way In</h3>
+            <p class="scene-text">One night, out of questions, I asked her elephant how he was doing instead. The room went still. Then she told me everything — through him, at length, completely true.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--6" data-scene="6" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/06.jpeg" role="img" aria-label="The brother and sister standing together in an open doorway with warm light streaming in and plush animals around their feet"></div>
+          </div>
+          <div class="rays">
+            <span class="story-ray" style="left:14%; transform:rotate(12deg);"></span>
+            <span class="story-ray" style="left:46%; transform:rotate(-6deg);"></span>
+            <span class="story-ray" style="left:78%; transform:rotate(16deg);"></span>
+          </div>
+          <div class="weather" data-weather="hearts"></div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 6 of 7</span>
+            <h3 class="scene-title">Coming Back Together</h3>
+            <p class="scene-text">When the door opened, the house let out a breath it had been holding. We kept the animals anyway — small worries wearing fur and feathers, easier to hold than our own.</p>
+          </div>
+        </article>
+
+        <article class="scene scene--7" data-scene="7" aria-hidden="true">
+          <div class="scene-illustration">
+            <div class="scene-photo" data-bg="images/story/07.jpeg" role="img" aria-label="Small plush animal toys arranged on a table, with the faded silhouette of the brother and sister walking hand in hand in the hazy background"></div>
+          </div>
+          <div class="weather" data-weather="motes"></div>
+          <div class="scene-copy">
+            <span class="scene-count">Chapter 7 of 7</span>
+            <h3 class="scene-title">Why These Cards Exist</h3>
+            <p class="scene-text">Feelings &amp; Friends began behind that door. Every card still asks its question through an animal — the same doorway I found by accident, propped open now for anyone else who needs it.</p>
+          </div>
+        </article>
+
+      </div>
+
+      <button type="button" class="story-arrow story-prev" id="storyPrev" aria-label="Previous chapter" disabled>‹</button>
+      <button type="button" class="story-arrow story-next" id="storyNext" aria-label="Next chapter">›</button>
+
+      <div class="story-hint" id="storyHint" aria-hidden="true">
+        <span>Swipe</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
     </div>
 
-    <div class="storybook reveal">
-      <div class="storybook-frame" id="storyFrame" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Our story, 7 chapters">
-        <div class="storybook-stage" id="storyStage">
-
-          <article class="scene scene--1 is-active" data-scene="1" aria-hidden="false">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/01.jpeg" alt="The brother walking through their sunlit home with his little sister trailing close behind, reaching for his sleeve" loading="eager">
-            </div>
-            <div class="weather" data-weather="motes"></div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 1 of 7</span>
-              <h3 class="scene-title">Two of Us</h3>
-              <p class="scene-text">She trailed me through every room — kitchen, porch, whatever hallway I wandered into. Sunlit days, small footsteps close behind. I didn't yet know what quiet would sound like without them.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--2" data-scene="2" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/02.jpeg" alt="The brother standing alone in a dim doorway with storm clouds gathering outside the window, tense and worried" loading="lazy">
-            </div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 2 of 7</span>
-              <h3 class="scene-title">Then, Overnight</h3>
-              <p class="scene-text">One test result, and the house rearranged itself around a line neither of us could cross. Clouds gathered over the doorway. Outside, everything looked exactly the same.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--3" data-scene="3" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/03.jpeg" alt="The little sister crying alone on one side of a closed door at night while her brother sits silently on the other side, a sliver of warm light between them" loading="lazy">
-            </div>
-            <div class="weather" data-weather="stars"></div>
-            <div class="weather" data-weather="rain"></div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 3 of 7</span>
-              <h3 class="scene-title">The Door Between Us</h3>
-              <p class="scene-text">Quarantine meant nothing to her. A closed door meant everything. Some nights the rain slipped in anyway, under the door, into the space between us — and we each sat with it, one on either side.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--4" data-scene="4" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/04.jpeg" alt="The little sister sitting alone at night, puzzled, with scribbled thought-clouds and a glowing question mark above her head" loading="lazy">
-            </div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 4 of 7</span>
-              <h3 class="scene-title">No Words For It</h3>
-              <p class="scene-text">She had no word yet for missing, or fear, or a house that stopped making sense. Just static — small hands over small ears, a question mark where an answer should be.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--5" data-scene="5" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/05.jpeg" alt="The brother listening to his little sister as she talks through her plush elephant, lamp glowing warmly beside them" loading="lazy">
-            </div>
-            <div class="weather" data-weather="stars"></div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 5 of 7</span>
-              <h3 class="scene-title">A Different Way In</h3>
-              <p class="scene-text">One night, out of questions, I asked her elephant how he was doing instead. The room went still. Then she told me everything — through him, at length, completely true.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--6" data-scene="6" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/06.jpeg" alt="The brother and sister standing together in an open doorway with warm light streaming in and plush animals around their feet" loading="lazy">
-            </div>
-            <div class="rays">
-              <span class="story-ray" style="left:14%; transform:rotate(12deg);"></span>
-              <span class="story-ray" style="left:46%; transform:rotate(-6deg);"></span>
-              <span class="story-ray" style="left:78%; transform:rotate(16deg);"></span>
-            </div>
-            <div class="weather" data-weather="hearts"></div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 6 of 7</span>
-              <h3 class="scene-title">Coming Back Together</h3>
-              <p class="scene-text">When the door opened, the house let out a breath it had been holding. We kept the animals anyway — small worries wearing fur and feathers, easier to hold than our own.</p>
-            </div>
-          </article>
-
-          <article class="scene scene--7" data-scene="7" aria-hidden="true">
-            <div class="scene-illustration">
-              <img class="scene-photo" src="images/story/07.jpeg" alt="Small plush animal toys arranged on a table, with the faded silhouette of the brother and sister walking hand in hand in the hazy background" loading="lazy">
-            </div>
-            <div class="weather" data-weather="motes"></div>
-            <div class="scene-copy">
-              <span class="scene-count">Chapter 7 of 7</span>
-              <h3 class="scene-title">Why These Cards Exist</h3>
-              <p class="scene-text">Feelings &amp; Friends began behind that door. Every card still asks its question through an animal — the same doorway I found by accident, propped open now for anyone else who needs it.</p>
-            </div>
-          </article>
-
+    <div class="storybook-controls">
+      <div class="story-toolbar">
+        <button type="button" class="story-playtoggle" id="storyPlayToggle" aria-label="Pause story autoplay" aria-pressed="false"></button>
+        <div class="story-track" id="storyDots" role="tablist" aria-label="Story chapters">
+          <button type="button" class="story-seg active" role="tab" aria-selected="true" aria-label="Chapter 1: Two of Us"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 2: Then, Overnight"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 3: The Door Between Us"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 4: No Words For It"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 5: A Different Way In"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 6: Coming Back Together"></button>
+          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 7: Why These Cards Exist"></button>
         </div>
-        <button type="button" class="story-arrow story-prev" id="storyPrev" aria-label="Previous chapter" disabled>‹</button>
-        <button type="button" class="story-arrow story-next" id="storyNext" aria-label="Next chapter">›</button>
+        <span class="story-count" id="storyCount" aria-hidden="true">1 / 7</span>
       </div>
-
-      <div class="storybook-controls">
-        <div class="story-dots" id="storyDots" role="tablist" aria-label="Story chapters">
-          <button type="button" class="dot active" role="tab" aria-selected="true" aria-label="Chapter 1: Two of Us"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 2: Then, Overnight"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 3: The Door Between Us"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 4: No Words For It"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 5: A Different Way In"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 6: Coming Back Together"></button>
-          <button type="button" class="dot" role="tab" aria-selected="false" aria-label="Chapter 7: Why These Cards Exist"></button>
-        </div>
-        <a href="#checkout" class="story-skip">Skip to the cards →</a>
-      </div>
+      <a href="#checkout" class="story-skip">Skip to the cards →</a>
     </div>
   </div>
 </section>
@@ -1397,51 +1442,176 @@
       if(kind === 'hearts') spawnHearts(el, 4);
     });
 
+    // ---- lazy background loading ----
+    // Photos are set as CSS backgrounds only when needed (current slide +
+    // its neighbours). Nothing is ever wired up as a plain <img>, so there's
+    // no element for a long-press / drag gesture to save or drag out — and
+    // slides that are never viewed never even get requested.
+    const scenes = Array.from(stage.querySelectorAll('.scene'));
+    function loadScene(i){
+      const scene = scenes[i];
+      if(!scene) return;
+      const photo = scene.querySelector('.scene-photo');
+      if(!photo || photo.dataset.loaded) return;
+      const url = photo.dataset.bg;
+      if(!url) return;
+      photo.style.backgroundImage = "url('" + url + "')";
+      photo.dataset.loaded = '1';
+    }
+    function preloadAround(i){
+      loadScene(i);
+      loadScene(i - 1);
+      loadScene(i + 1);
+    }
+
     // ---- navigation ----
-    const scenes  = Array.from(stage.querySelectorAll('.scene'));
-    const dots    = Array.from(document.querySelectorAll('#storyDots .dot'));
+    const segs    = Array.from(document.querySelectorAll('#storyDots .story-seg'));
     const prevBtn = document.getElementById('storyPrev');
     const nextBtn = document.getElementById('storyNext');
     const frame   = document.getElementById('storyFrame');
+    const hint    = document.getElementById('storyHint');
+    const countEl = document.getElementById('storyCount');
+    const playBtn = document.getElementById('storyPlayToggle');
     const total   = scenes.length;
     let storyIdx  = 0;
 
+    const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    const ICON_PLAY  = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>';
+
+    function hideHint(){ if(hint) hint.classList.add('is-hidden'); }
+
     function renderStory(){
+      stage.style.setProperty('--idx', storyIdx);
+      stage.style.setProperty('--dragpx', '0px');
       scenes.forEach((s, i) => {
         const active = i === storyIdx;
         s.classList.toggle('is-active', active);
         s.setAttribute('aria-hidden', active ? 'false' : 'true');
       });
-      dots.forEach((d, i) => {
+      segs.forEach((d, i) => {
         const active = i === storyIdx;
         d.classList.toggle('active', active);
         d.setAttribute('aria-selected', active ? 'true' : 'false');
       });
       prevBtn.disabled = storyIdx === 0;
       nextBtn.disabled = storyIdx === total - 1;
+      if(countEl) countEl.textContent = (storyIdx + 1) + ' / ' + total;
+      preloadAround(storyIdx);
     }
-    function goToScene(n){
-      storyIdx = Math.max(0, Math.min(total - 1, n));
+    function goToScene(n, userInitiated){
+      const clamped = Math.max(0, Math.min(total - 1, n));
+      const changed = clamped !== storyIdx;
+      storyIdx = clamped;
       renderStory();
+      if(userInitiated){ hideHint(); restartAutoplay(); }
+      return changed;
     }
 
-    prevBtn.addEventListener('click', () => goToScene(storyIdx - 1));
-    nextBtn.addEventListener('click', () => goToScene(storyIdx + 1));
-    dots.forEach((d, i) => d.addEventListener('click', () => goToScene(i)));
+    prevBtn.addEventListener('click', () => goToScene(storyIdx - 1, true));
+    nextBtn.addEventListener('click', () => goToScene(storyIdx + 1, true));
+    segs.forEach((d, i) => d.addEventListener('click', () => goToScene(i, true)));
 
     frame.addEventListener('keydown', e => {
-      if(e.key === 'ArrowRight'){ e.preventDefault(); goToScene(storyIdx + 1); }
-      if(e.key === 'ArrowLeft'){ e.preventDefault(); goToScene(storyIdx - 1); }
+      if(e.key === 'ArrowRight'){ e.preventDefault(); goToScene(storyIdx + 1, true); }
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); goToScene(storyIdx - 1, true); }
     });
 
-    let storyTouchX = null;
-    frame.addEventListener('touchstart', e => { storyTouchX = e.touches[0].clientX; }, {passive:true});
-    frame.addEventListener('touchend', e => {
-      if(storyTouchX === null) return;
-      const dx = e.changedTouches[0].clientX - storyTouchX;
-      if(Math.abs(dx) > 40){ dx < 0 ? goToScene(storyIdx + 1) : goToScene(storyIdx - 1); }
-      storyTouchX = null;
-    }, {passive:true});
+    // Block the browser's own "save/copy image" and drag-out affordances
+    // at the frame level too, belt-and-suspenders alongside the CSS.
+    frame.addEventListener('contextmenu', e => e.preventDefault());
+    frame.addEventListener('dragstart', e => e.preventDefault());
+
+    // ---- drag-to-swipe (mouse + touch, unified via Pointer Events) ----
+    // The stage really slides under the finger/cursor in real time, then
+    // snaps to the nearest chapter on release — no separate "grab the
+    // image" gesture involved, since pointer events target the frame.
+    let dragging = false, dragStartX = 0, dragDx = 0, frameWidth = 0;
+
+    function onPointerDown(e){
+      if(e.target.closest('.story-arrow')) return; // let the arrow buttons handle their own clicks
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true;
+      dragDx = 0;
+      dragStartX = e.clientX;
+      frameWidth = frame.getBoundingClientRect().width || 1;
+      frame.classList.add('is-dragging');
+      stopAutoplay();
+      if(frame.setPointerCapture){ try{ frame.setPointerCapture(e.pointerId); }catch(err){} }
+    }
+    function onPointerMove(e){
+      if(!dragging) return;
+      dragDx = e.clientX - dragStartX;
+      const atStart = storyIdx === 0 && dragDx > 0;
+      const atEnd   = storyIdx === total - 1 && dragDx < 0;
+      const eased   = (atStart || atEnd) ? dragDx * 0.35 : dragDx;
+      stage.style.setProperty('--dragpx', eased.toFixed(1) + 'px');
+    }
+    function onPointerUp(){
+      if(!dragging) return;
+      dragging = false;
+      frame.classList.remove('is-dragging');
+      const threshold = Math.min(90, frameWidth * 0.18);
+      let moved = false;
+      if(dragDx <= -threshold)      moved = goToScene(storyIdx + 1, true);
+      else if(dragDx >= threshold)  moved = goToScene(storyIdx - 1, true);
+      else { stage.style.setProperty('--dragpx', '0px'); hideHint(); restartAutoplay(); }
+      dragDx = 0;
+    }
+    frame.addEventListener('pointerdown', onPointerDown);
+    frame.addEventListener('pointermove', onPointerMove);
+    frame.addEventListener('pointerup', onPointerUp);
+    frame.addEventListener('pointercancel', onPointerUp);
+
+    // ---- autoplay (paused by interaction, off-screen, or reduced motion) ----
+    const AUTOPLAY_MS = 6000;
+    let autoplayTimer = null;
+    let isPlaying = !prefersReduced;
+    let inView = true;
+
+    function updatePlayIcon(){
+      if(!playBtn) return;
+      playBtn.innerHTML = isPlaying ? ICON_PAUSE : ICON_PLAY;
+      playBtn.setAttribute('aria-label', isPlaying ? 'Pause story autoplay' : 'Play story autoplay');
+      playBtn.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+    }
+    function stopAutoplay(){
+      if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer = null; }
+    }
+    function startAutoplay(){
+      stopAutoplay();
+      if(!isPlaying || !inView) return;
+      autoplayTimer = setInterval(() => {
+        goToScene(storyIdx + 1 >= total ? 0 : storyIdx + 1);
+      }, AUTOPLAY_MS);
+    }
+    function restartAutoplay(){ startAutoplay(); }
+
+    if(playBtn){
+      updatePlayIcon();
+      playBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        updatePlayIcon();
+        isPlaying ? startAutoplay() : stopAutoplay();
+      });
+    }
+    frame.addEventListener('mouseenter', stopAutoplay);
+    frame.addEventListener('mouseleave', startAutoplay);
+    frame.addEventListener('focusin', stopAutoplay);
+    frame.addEventListener('focusout', startAutoplay);
+    document.addEventListener('visibilitychange', () => {
+      document.hidden ? stopAutoplay() : startAutoplay();
+    });
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          inView = entry.isIntersecting;
+          inView ? startAutoplay() : stopAutoplay();
+        });
+      }, {threshold:0.35}).observe(frame);
+    }
+
+    // fallback: fade the swipe hint on its own after a few seconds
+    if(hint) setTimeout(hideHint, 5000);
 
     // ---- gentle parallax tilt on hover (desktop only) ----
     const canHover = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
@@ -1473,6 +1643,7 @@
     }
 
     renderStory();
+    startAutoplay();
   })();
 </script>
 
