@@ -3,9 +3,81 @@
     const stage = document.getElementById('storyStage');
     if(!stage) return;
 
+    const C = window.SITE_CONFIG;
+    const chapters = (C && C.story && C.story.chapters) || [];
+
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function rand(min, max){ return min + Math.random() * (max - min); }
+
+    // ---- build the chapter <article> scenes + nav dots from config ----
+    // (this used to be hand-written HTML in index.html; now it's generic
+    // over however many chapters config.js -> story.chapters defines)
+    const dotsContainer = document.getElementById('storyDots');
+    chapters.forEach((ch, i) => {
+      const article = document.createElement('article');
+      article.className = 'scene scene--' + (i + 1) + (i === 0 ? ' is-active' : '');
+      article.dataset.scene = String(i + 1);
+      article.setAttribute('aria-hidden', i === 0 ? 'false' : 'true');
+
+      const illustration = document.createElement('div');
+      illustration.className = 'scene-illustration';
+      const photo = document.createElement('div');
+      photo.className = 'scene-photo';
+      photo.dataset.bg = ch.image;
+      photo.setAttribute('role', 'img');
+      photo.setAttribute('aria-label', ch.imageAlt || '');
+      illustration.appendChild(photo);
+      article.appendChild(illustration);
+
+      const ambient = document.createElement('div');
+      ambient.className = 'story-ambient';
+      ambient.setAttribute('data-ambient', '');
+      ambient.setAttribute('aria-hidden', 'true');
+      article.appendChild(ambient);
+
+      if(ch.rays){
+        const rays = document.createElement('div');
+        rays.className = 'rays';
+        rays.innerHTML =
+          '<span class="story-ray" style="left:14%; transform:rotate(12deg);"></span>' +
+          '<span class="story-ray" style="left:46%; transform:rotate(-6deg);"></span>' +
+          '<span class="story-ray" style="left:78%; transform:rotate(16deg);"></span>';
+        article.appendChild(rays);
+      }
+
+      (ch.weather || []).forEach(kind => {
+        const w = document.createElement('div');
+        w.className = 'weather';
+        w.setAttribute('data-weather', kind);
+        article.appendChild(w);
+      });
+
+      const copy = document.createElement('div');
+      copy.className = 'scene-copy';
+      copy.innerHTML =
+        '<span class="scene-count">Chapter ' + (i + 1) + ' of ' + chapters.length + '</span>' +
+        '<h3 class="scene-title"></h3>' +
+        '<p class="scene-text"></p>';
+      copy.querySelector('.scene-title').textContent = ch.title;
+      copy.querySelector('.scene-text').innerHTML = ch.text;
+      article.appendChild(copy);
+
+      stage.appendChild(article);
+
+      if(dotsContainer){
+        const seg = document.createElement('button');
+        seg.type = 'button';
+        seg.className = 'story-seg' + (i === 0 ? ' active' : '');
+        seg.setAttribute('role', 'tab');
+        seg.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+        seg.setAttribute('aria-label', 'Chapter ' + (i + 1) + ': ' + ch.title);
+        dotsContainer.appendChild(seg);
+      }
+    });
+
+    const frameEl = document.getElementById('storyFrame');
+    if(frameEl) frameEl.setAttribute('aria-label', 'Our story, ' + chapters.length + ' chapters');
 
     function spawnRain(container, count){
       if(prefersReduced) return;

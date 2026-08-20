@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--
+  SEO/meta tags below are kept as plain HTML on purpose (crawlers and
+  social-preview bots read these before any JS runs, so they can't be
+  templated client-side without hurting SEO). When you relaunch this
+  as a new store, update these to match config.js -> meta{}, and the
+  two <script type="application/ld+json"> blocks below.
+  Everything else on the page is rendered from config.js by render.js.
+-->
 <title>Feelings & Friends — 60 Printable Animal Emotion Cards (PDF Download)</title>
 <meta name="description" content="60 printable animal feelings cards for kids — each pairs a cozy animal fact with a gentle question that opens up real conversations about emotions. Instant PDF download, includes both a 30-page and 60-page print layout. $9.99, pay with crypto.">
 <meta name="keywords" content="feelings cards printable, emotion cards for kids, animal feelings flashcards, SEL cards printable, social emotional learning cards, feelings flashcards PDF, printable conversation cards kids">
@@ -102,59 +111,44 @@
         <circle cx="39" cy="27" r="2" fill="#3E3126"/>
         <ellipse cx="32" cy="33" rx="4" ry="2.6" fill="#8E6339"/>
       </svg>
-      <span>Feelings &amp; Friends</span>
+      <span id="navBrandName"></span>
     </div>
-    <div class="nav-links">
-      <a class="nav-link" href="#our-story">Our story</a>
-      <a class="nav-link" href="#gallery">Sample cards</a>
-      <a class="nav-link" href="#feelings-wheel">What's inside</a>
-    </div>
-    <a class="nav-cta" href="#checkout">Get the PDF</a>
+    <div class="nav-links" id="navLinks"><!-- injected --></div>
+    <a class="nav-cta" id="navCta" href="#checkout"></a>
   </div>
 </nav>
 
 <header class="hero">
   <div class="hero-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
   <div class="wrap">
-    <span class="eyebrow">✦ Instant PDF Download ✦</span>
-    <h1>Sixty animal friends,<br>one gentle <span class="hl">question</span> each.</h1>
-    <p class="sub">A printable deck of feelings cards — each one pairs a cozy animal fact with a question kids actually want to answer. Great for bedtime, the car, or the classroom circle.</p>
+    <span class="eyebrow" id="heroEyebrow"></span>
+    <h1 id="heroHeading"></h1>
+    <p class="sub" id="heroSub"></p>
     <div class="hero-actions">
-      <a class="buy-btn" href="#checkout">
-        Get the deck — <span class="price-tag">$9.99</span>
-      </a>
-      <a class="ghost-btn" href="#gallery">Peek inside ↓</a>
+      <a class="buy-btn" href="#checkout" id="heroBuyBtn"></a>
+      <a class="ghost-btn" id="heroGhostBtn" href="#gallery"></a>
     </div>
-    <p class="hero-note"><a href="#feelings-wheel">See the 8 feeling families it covers →</a></p>
+    <p class="hero-note" id="heroNote"></p>
 
     <div class="capy-wrap">
       <svg viewBox="0 0 240 170" class="float" aria-hidden="true">
         <ellipse cx="120" cy="150" rx="100" ry="14" fill="#E7E0CC" opacity=".5"/>
-        <!-- legs/feet -->
         <ellipse cx="70" cy="140" rx="16" ry="10" fill="#8E6339"/>
         <ellipse cx="170" cy="140" rx="16" ry="10" fill="#8E6339"/>
-        <!-- body -->
         <ellipse cx="120" cy="112" rx="88" ry="52" fill="#C79868"/>
-        <!-- belly -->
         <ellipse cx="120" cy="126" rx="58" ry="30" fill="#DDB98A"/>
-        <!-- ears -->
         <ellipse cx="72" cy="46" rx="15" ry="17" fill="#C79868"/>
         <ellipse cx="168" cy="46" rx="15" ry="17" fill="#C79868"/>
         <ellipse cx="72" cy="48" rx="7.5" ry="8.5" fill="#8E6339"/>
         <ellipse cx="168" cy="48" rx="7.5" ry="8.5" fill="#8E6339"/>
-        <!-- head -->
         <ellipse cx="120" cy="70" rx="52" ry="44" fill="#C79868"/>
-        <!-- snout -->
         <ellipse cx="120" cy="92" rx="30" ry="20" fill="#DDB98A"/>
-        <!-- eyes -->
         <circle cx="98" cy="66" r="5.5" fill="#3E3126"/>
         <circle cx="142" cy="66" r="5.5" fill="#3E3126"/>
         <circle cx="96" cy="64" r="1.8" fill="#fff"/>
         <circle cx="140" cy="64" r="1.8" fill="#fff"/>
-        <!-- nose + mouth -->
         <ellipse cx="120" cy="88" rx="9" ry="6" fill="#8E6339"/>
         <path d="M108 96 Q120 104 132 96" stroke="#8E6339" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <!-- cheeks -->
         <ellipse cx="86" cy="84" rx="9" ry="6" fill="#F2B9C4" opacity=".65"/>
         <ellipse cx="154" cy="84" rx="9" ry="6" fill="#F2B9C4" opacity=".65"/>
       </svg>
@@ -165,114 +159,19 @@
 <section class="story story--top" id="our-story">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">✦ A note from the maker ✦</span>
-      <h2>Why Feelings &amp; Friends exists</h2>
-      <p class="story-lede">A true, short story about a closed door, a little sister, and the one question that finally got through. Swipe, drag, or tap <span class="story-lede-icon" aria-hidden="true">⤢</span> to go widescreen.</p>
+      <span class="eyebrow" id="storyEyebrow"></span>
+      <h2 id="storyHeading"></h2>
+      <p class="story-lede" id="storyLede"></p>
     </div>
   </div>
 
   <!-- Sits outside .wrap on purpose: lets the stage run wider than the
-       1040px text column below, without ever bleeding to the raw viewport
+       1040px text column above, without ever bleeding to the raw viewport
        edge (see .storybook width in CSS). -->
   <div class="storybook reveal" id="storybookRoot">
-    <div class="storybook-frame" id="storyFrame" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Our story, 7 chapters">
+    <div class="storybook-frame" id="storyFrame" tabindex="0" role="group" aria-roledescription="carousel" aria-label="Our story">
       <div class="storybook-stage" id="storyStage" style="--idx:0;">
-
-        <article class="scene scene--1 is-active" data-scene="1" aria-hidden="false">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/01.jpeg" role="img" aria-label="The brother walking through their sunlit home with his little sister trailing close behind, reaching for his sleeve"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="weather" data-weather="motes"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 1 of 7</span>
-            <h3 class="scene-title">Two of Us</h3>
-            <p class="scene-text">She trailed me through every room — kitchen, porch, whatever hallway I wandered into. Sunlit days, small footsteps close behind. I didn't yet know what quiet would sound like without them.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--2" data-scene="2" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/02.jpeg" role="img" aria-label="The brother standing alone in a dim doorway with storm clouds gathering outside the window, tense and worried"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 2 of 7</span>
-            <h3 class="scene-title">Then, Overnight</h3>
-            <p class="scene-text">One test result, and the house rearranged itself around a line neither of us could cross. Clouds gathered over the doorway. Outside, everything looked exactly the same.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--3" data-scene="3" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/03.jpeg" role="img" aria-label="The little sister crying alone on one side of a closed door at night while her brother sits silently on the other side, a sliver of warm light between them"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="weather" data-weather="stars"></div>
-          <div class="weather" data-weather="rain"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 3 of 7</span>
-            <h3 class="scene-title">The Door Between Us</h3>
-            <p class="scene-text">Quarantine meant nothing to her. A closed door meant everything. Some nights the rain slipped in anyway, under the door, into the space between us — and we each sat with it, one on either side.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--4" data-scene="4" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/04.jpeg" role="img" aria-label="The little sister sitting alone at night, puzzled, with scribbled thought-clouds and a glowing question mark above her head"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 4 of 7</span>
-            <h3 class="scene-title">No Words For It</h3>
-            <p class="scene-text">She had no word yet for missing, or fear, or a house that stopped making sense. Just static — small hands over small ears, a question mark where an answer should be.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--5" data-scene="5" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/05.jpeg" role="img" aria-label="The brother listening to his little sister as she talks through her plush elephant, lamp glowing warmly beside them"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="weather" data-weather="stars"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 5 of 7</span>
-            <h3 class="scene-title">A Different Way In</h3>
-            <p class="scene-text">One night, out of questions, I asked her elephant how he was doing instead. The room went still. Then she told me everything — through him, at length, completely true.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--6" data-scene="6" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/06.jpeg" role="img" aria-label="The brother and sister standing together in an open doorway with warm light streaming in and plush animals around their feet"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="rays">
-            <span class="story-ray" style="left:14%; transform:rotate(12deg);"></span>
-            <span class="story-ray" style="left:46%; transform:rotate(-6deg);"></span>
-            <span class="story-ray" style="left:78%; transform:rotate(16deg);"></span>
-          </div>
-          <div class="weather" data-weather="hearts"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 6 of 7</span>
-            <h3 class="scene-title">Coming Back Together</h3>
-            <p class="scene-text">When the door opened, the house let out a breath it had been holding. We kept the animals anyway — small worries wearing fur and feathers, easier to hold than our own.</p>
-          </div>
-        </article>
-
-        <article class="scene scene--7" data-scene="7" aria-hidden="true">
-          <div class="scene-illustration">
-            <div class="scene-photo" data-bg="images/story/07.jpeg" role="img" aria-label="Small plush animal toys arranged on a table, with the faded silhouette of the brother and sister walking hand in hand in the hazy background"></div>
-          </div>
-          <div class="story-ambient" data-ambient aria-hidden="true"></div>
-          <div class="weather" data-weather="motes"></div>
-          <div class="scene-copy">
-            <span class="scene-count">Chapter 7 of 7</span>
-            <h3 class="scene-title">Why These Cards Exist</h3>
-            <p class="scene-text">Feelings &amp; Friends began behind that door. Every card still asks its question through an animal — the same doorway I found by accident, propped open now for anyone else who needs it.</p>
-          </div>
-        </article>
-
+        <!-- chapter <article> scenes injected by story.js from config.js -->
       </div>
 
       <button type="button" class="story-arrow story-prev" id="storyPrev" aria-label="Previous chapter" disabled>
@@ -295,18 +194,10 @@
     <div class="storybook-controls" id="storybookControls">
       <div class="story-toolbar">
         <button type="button" class="story-playtoggle" id="storyPlayToggle" aria-label="Pause story autoplay" aria-pressed="false"></button>
-        <div class="story-track" id="storyDots" role="tablist" aria-label="Story chapters">
-          <button type="button" class="story-seg active" role="tab" aria-selected="true" aria-label="Chapter 1: Two of Us"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 2: Then, Overnight"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 3: The Door Between Us"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 4: No Words For It"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 5: A Different Way In"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 6: Coming Back Together"></button>
-          <button type="button" class="story-seg" role="tab" aria-selected="false" aria-label="Chapter 7: Why These Cards Exist"></button>
-        </div>
-        <span class="story-count" id="storyCount" aria-hidden="true">1 / 7</span>
+        <div class="story-track" id="storyDots" role="tablist" aria-label="Story chapters"><!-- injected --></div>
+        <span class="story-count" id="storyCount" aria-hidden="true"></span>
       </div>
-      <a href="#checkout" class="story-skip">Skip to the cards →</a>
+      <a href="#checkout" class="story-skip" id="storySkip"></a>
     </div>
   </div>
 </section>
@@ -325,37 +216,37 @@
 <section class="gallery" id="gallery">
   <div class="wrap">
     <div class="section-head reveal">
-      <h2>A peek inside the deck</h2>
-      <p>Tap any card to zoom in — there are 30 double-sided pages (60 animal feelings cards!) waiting in the full download.</p>
+      <h2 id="galleryHeading"></h2>
+      <p id="gallerySub"></p>
     </div>
 
     <div class="card-grid" id="cardGrid">
       <!-- thumbs injected by JS -->
     </div>
 
-    <p class="gallery-more">…plus <strong>51 more cards</strong> covering everything from brave lion cubs to jealous jaguars — <a href="#feelings-wheel">see the full feelings wheel ↓</a></p>
+    <p class="gallery-more" id="galleryMore"></p>
   </div>
 </section>
 
 <section class="wheel-section" id="feelings-wheel">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">✦ What's inside ✦</span>
-      <h2>A whole wheel of feelings</h2>
-      <p>The 60 cards sort into 8 feeling families. Tap a petal to see what each one covers — no spoilers on the cards themselves.</p>
+      <span class="eyebrow" id="wheelEyebrow"></span>
+      <h2 id="wheelHeading"></h2>
+      <p id="wheelSub"></p>
     </div>
 
     <div class="wheel-stage reveal">
       <div class="wheel-ring" id="wheelRing">
         <div class="wheel-hub" id="wheelHub">
-          <span class="hub-num">60</span>
-          <span class="hub-label">feelings</span>
+          <span class="hub-num"></span>
+          <span class="hub-label"></span>
         </div>
         <!-- petals injected by JS -->
       </div>
 
       <div class="wheel-detail" id="wheelDetail">
-        <div class="wheel-hint">👆 Tap any petal on the wheel — you'll see how many cards are in that family and the range of feelings it opens up.</div>
+        <div class="wheel-hint" id="wheelHint"></div>
       </div>
     </div>
   </div>
@@ -363,45 +254,16 @@
 
 <section class="about">
   <div class="wrap">
-    <div class="about-grid">
-      <div class="reveal">
-        <div class="icon a">🖨️</div>
-        <h3>Print at home</h3>
-        <p>High-resolution PDF, ready for any home or office printer — no trimming required.</p>
-      </div>
-      <div class="reveal">
-        <div class="icon b">💬</div>
-        <h3>Real conversations</h3>
-        <p>Each card pairs a relatable animal fact with a question that invites kids to open up.</p>
-      </div>
-      <div class="reveal">
-        <div class="icon c">⚡</div>
-        <h3>Instant delivery</h3>
-        <p>Pay with crypto, get your download link right after — no accounts, no waiting.</p>
-      </div>
-    </div>
+    <div class="about-grid" id="aboutGrid"><!-- injected --></div>
   </div>
 </section>
 
 <section class="about">
   <div class="wrap">
     <div class="section-head reveal">
-      <h2>Frequently asked questions</h2>
+      <h2 id="faqHeading"></h2>
     </div>
-    <div class="about-grid">
-      <div class="reveal">
-        <h3>What do I get?</h3>
-        <p>Two printable PDFs: a 30-page version (2 cards/page, saves paper) and a 60-page version (1 card/page, bigger cards, easier to cut). Same 60 animal feelings cards in both.</p>
-      </div>
-      <div class="reveal">
-        <h3>How does delivery work?</h3>
-        <p>Automatic after a confirmed crypto payment. If it doesn't arrive, email your payment confirmation and it'll be sent manually.</p>
-      </div>
-      <div class="reveal">
-        <h3>What payment methods work?</h3>
-        <p>Bitcoin, Monero, Ethereum, and 300+ other cryptocurrencies via NOWPayments.</p>
-      </div>
-    </div>
+    <div class="about-grid" id="faqGrid"><!-- injected --></div>
   </div>
 </section>
 
@@ -409,23 +271,22 @@
 <section class="checkout" id="checkout">
   <div class="wrap">
     <div class="checkout-panel reveal">
-      <h2>Get your copy</h2>
-      <p class="format-note">You'll get <strong>2 PDF files</strong>: a 30-page version (2 cards/page, saves paper) and a 60-page version (1 card/page, bigger cards, easier to cut). Print whichever suits you.</p>
+      <h2 id="checkoutHeading"></h2>
+      <p class="format-note" id="checkoutFormatNote"></p>
       <input type="email" id="buyerEmail" class="email-input" placeholder="you@example.com" required autocomplete="email">
-      <button type="button" id="payBtn" class="pay-btn">Pay $9.99 &amp; get the deck</button>
+      <button type="button" id="payBtn" class="pay-btn"></button>
       <p class="status-msg" id="payStatus"></p>
       <div class="widget-frame" id="widgetFrame"></div>
-      <div class="coin-row" id="coinRow">
-        <span class="coin-pill">Bitcoin</span>
-        <span class="coin-pill">Monero</span>
-        <span class="coin-pill">Ethereum</span>
-        <span class="coin-pill">+300 more</span>
-      </div>
-      <p class="fallback-note" id="fallbackNote">Enter your email and click Pay — checkout will appear right here on the page.</p>
+      <div class="coin-row" id="coinRow"><!-- injected --></div>
+      <p class="fallback-note" id="fallbackNote"></p>
     </div>
   </div>
 </section>
 
+<footer>
+  <p id="footerDelivery"></p>
+  <p class="footer-note" id="footerNote"></p>
+</footer>
 
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Card preview">
@@ -438,6 +299,9 @@
   </div>
 </div>
 
+<!-- config.js must load first: main.js, render.js and story.js all read window.SITE_CONFIG -->
+<script src="config.js"></script>
+<script src="js/render.js"></script>
 <script src="js/main.js"></script>
 <script src="js/story.js"></script>
 </body>

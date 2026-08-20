@@ -1,14 +1,7 @@
-  const cards = [
-    { id:"01", names:"Oopsie Armadillo & Grumpy Bear" },
-    { id:"05", names:"Courageous Chimpanzee & Busy Chipmunk" },
-    { id:"09", names:"Soaring Eagle & Jumpy Elephant" },
-    { id:"13", names:"Sharing Gorilla & Cozy Hedgehog" },
-    { id:"17", names:"Contented Koala & Cuddly Lamb" },
-    { id:"21", names:"Surprised Owl & Munchy Panda" },
-    { id:"24", names:"Bouncy Puppy & Hopeful Rabbit" },
-    { id:"27", names:"Determined Salmon & Anxious Squirrel" },
-    { id:"30", names:"Affectionate Alpaca & Busy Ant" }
-  ];
+  const C = window.SITE_CONFIG;
+
+  // ---- Gallery grid + lightbox (cards come from config.js -> gallery.cards) ----
+  const cards = C.gallery.cards;
 
   const grid = document.getElementById('cardGrid');
   cards.forEach((c, i) => {
@@ -76,35 +69,8 @@
   }, { threshold: 0.15 });
   revealEls.forEach(el => io.observe(el));
 
-  // ---- Feelings wheel: 60 cards sorted into 8 feeling families ----
-  // Counts/words are drawn straight from the deck's own card titles —
-  // no card art or animal+question pairings shown, just the feelings.
-  const feelingFamilies = [
-    { key:'joy', icon:'🦚', name:'Joyful & Proud', color:'#F6D077', count:10,
-      blurb:"Big smiles and big energy — proud, excited, silly, confident feelings.",
-      words:['Proud','Excited','Silly','Happy','Ready','Hopeful','Hardworking','Confident','Eager','Giggly'] },
-    { key:'love', icon:'🐑', name:'Loving & Kind', color:'#F2B9C4', count:8,
-      blurb:"Warm, connected feelings about family, friends, sharing, and making things right.",
-      words:['Loved','Kind','Loyal','Gentle','Sharing','Affectionate','Sorry','Open-hearted'] },
-    { key:'calm', icon:'🐨', name:'Calm & Cozy', color:'#A3C48F', count:8,
-      blurb:"Slow-breathing, settled feelings — for naptime, quiet time, and taking it easy.",
-      words:['Cozy','Calm','Peaceful','Patient','Thoughtful','Relaxed','Content'] },
-    { key:'brave', icon:'🦁', name:'Brave & Bold', color:'#E3B778', count:6,
-      blurb:"Chin-up feelings for trying hard things and not giving up.",
-      words:['Brave','Free','Determined','Courageous','Resilient','Persistent'] },
-    { key:'curious', icon:'🐱', name:'Curious & Wondering', color:'#95D2E0', count:6,
-      blurb:"Wide-eyed, imaginative feelings about new places, ideas, and questions.",
-      words:['Curious','Wonder','Imaginative','Resourceful','Adventurous'] },
-    { key:'nervous', icon:'🐿️', name:'Nervous & Worried', color:'#C7B7E8', count:7,
-      blurb:"Fluttery-tummy feelings — for when things feel too big, too fast, or too new.",
-      words:['Worried','Nervous','Shy','Careful','Startled','Overwhelmed','Anxious'] },
-    { key:'sad', icon:'🐧', name:'Sad & Lonely', color:'#BFE3D0', count:5,
-      blurb:"Quiet, low feelings — for missing someone, or a day that didn't go as planned.",
-      words:['Alone','Bored','Lonely','Disappointed'] },
-    { key:'big', icon:'🐻', name:'Big Feelings', color:'#F3AB8B', count:10,
-      blurb:"The tricky ones — grumpy, jealous, embarrassed — named gently, without judgment.",
-      words:['Grumpy','Surprised','Jealous','Embarrassed','Regretful','Frustrated','Angry','Confused','Guilty'] }
-  ];
+  // ---- Feelings wheel (families come from config.js -> feelingsWheel.families) ----
+  const feelingFamilies = C.feelingsWheel.families;
 
   const wheelRing = document.getElementById('wheelRing');
   const wheelHub = document.getElementById('wheelHub');
@@ -117,7 +83,7 @@
     petal.style.setProperty('--i', i);
     petal.style.background = f.color;
     petal.dataset.key = f.key;
-    petal.setAttribute('aria-label', f.name + ' — ' + f.count + ' of 60 cards');
+    petal.setAttribute('aria-label', f.name + ' — ' + f.count + ' of ' + C.feelingsWheel.totalCount + ' cards');
     petal.innerHTML = `<span class="petal-icon" aria-hidden="true">${f.icon}</span><span>${f.name.split(' ')[0]}</span>`;
     petal.addEventListener('click', () => selectFamily(f, petal));
     wheelRing.appendChild(petal);
@@ -139,7 +105,7 @@
           <span class="detail-icon" aria-hidden="true">${f.icon}</span>
           <div>
             <h3>${f.name}</h3>
-            <span class="detail-count">${f.count} of 60 cards</span>
+            <span class="detail-count">${f.count} of ${C.feelingsWheel.totalCount} cards</span>
           </div>
         </div>
         <p class="detail-blurb">${f.blurb}</p>
@@ -150,7 +116,8 @@
   }
 
   // ---- Checkout: create a fresh invoice per click, embed it inline ----
-  const CREATE_INVOICE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec";
+  // Endpoint + copy come from config.js -> checkout
+  const CREATE_INVOICE_ENDPOINT = C.checkout.invoiceEndpoint;
   const payBtn = document.getElementById('payBtn');
   const payStatus = document.getElementById('payStatus');
   const emailInput = document.getElementById('buyerEmail');
@@ -199,13 +166,13 @@
         payStatus.className = 'status-msg error';
         payStatus.textContent = data.error || "Couldn't start checkout — please try again in a moment.";
         payBtn.disabled = false;
-        payBtn.textContent = 'Pay $9.99 & get the deck';
+        payBtn.textContent = C.checkout.payButtonLabel;
       }
     } catch (err) {
       payStatus.className = 'status-msg error';
-      payStatus.textContent = 'Network error — please try again, or email mrzahaki2@gmail.com to order directly.';
+      payStatus.textContent = 'Network error — please try again, or email ' + C.footer.supportEmail + ' to order directly.';
     } finally {
       payBtn.disabled = false;
-      payBtn.textContent = 'Pay $9.99 & get the deck';
+      payBtn.textContent = C.checkout.payButtonLabel;
     }
   });
