@@ -74,8 +74,18 @@
 
   function appendMessages_(newOnes) {
     let addedUnread = 0;
+    // Dedupe by id: a background poll can race a send's own response (see
+    // the submit handler below) and fetch the same just-saved message
+    // before that response swaps out its optimistic placeholder. Without
+    // this check that message would get added twice — the "echo" bug.
+    const existingIds = new Set(messages.map(m => m.id));
     newOnes.forEach(m => {
+      if (existingIds.has(m.id)) {
+        if (m.createdAt > lastSeen) lastSeen = m.createdAt;
+        return;
+      }
       messages.push(m);
+      existingIds.add(m.id);
       if (m.createdAt > lastSeen) lastSeen = m.createdAt;
       if (m.sender === 'support' && !isOpen) addedUnread++;
     });
@@ -220,7 +230,15 @@
 
     if (data.ok && data.message) {
       const idx = messages.indexOf(optimistic);
-      if (idx !== -1) messages[idx] = data.message;
+      if (idx !== -1) messages.splice(idx, 1); // drop the optimistic placeholder
+      // If a background poll already pulled in this exact message (same id)
+      // while this request was still in flight, don't add a second copy —
+      // see appendMessages_ for the matching half of this fix.
+      const already = messages.some(m => m.id === data.message.id);
+      if (!already) {
+        messages.push(data.message);
+        messages.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+      }
       if (data.message.createdAt > lastSeen) lastSeen = data.message.createdAt;
       renderMessages_();
     } else {
