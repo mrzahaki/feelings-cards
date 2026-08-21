@@ -50,9 +50,19 @@
   .topnav .wrap{
     display:flex; align-items:center; justify-content:space-between;
     padding:14px 24px;
+    gap:10px;
   }
-  .brand{display:flex; align-items:center; gap:10px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.1rem;}
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.1rem;
+    /* first thing to give up space when the row gets tight — the account
+       and CTA buttons are the ones people actually need to tap */
+    flex-shrink:1; min-width:0;
+  }
   .brand svg{width:34px;height:34px;flex-shrink:0;}
+  .brand-full, .brand-short{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .brand-short{display:none;}
+  .nav-account, .nav-cta{flex-shrink:0;}
   .nav-links{display:flex; gap:22px;}
   .nav-link{
     text-decoration:none;
@@ -64,7 +74,16 @@
     transition:color .15s ease, border-color .15s ease;
   }
   .nav-link:hover{color:var(--brown-deep); border-color:var(--tan);}
-  @media (max-width:600px){ .nav-links{display:none;} }
+  @media (max-width:600px){
+    .nav-links{display:none;}
+    .brand-full{display:none;}
+    .brand-short{display:inline;}
+    .nav-cta{font-size:.8rem; padding:8px 14px;}
+  }
+  @media (max-width:380px){
+    .topnav .wrap{padding:12px 14px; gap:6px;}
+    .brand svg{width:28px; height:28px;}
+  }
   .nav-cta{
     background:linear-gradient(135deg, var(--brown) 0%, var(--brown-deep) 100%);
     color:#fff;
@@ -75,6 +94,7 @@
     border-radius:100px;
     box-shadow:0 4px 0 var(--brown-deep);
     transition:transform .12s ease, box-shadow .12s ease;
+    white-space:nowrap;
   }
   .nav-cta:hover{transform:translateY(2px); box-shadow:0 2px 0 var(--brown-deep);}
 
@@ -482,6 +502,17 @@
     color:var(--ink);
   }
   .email-input:focus{outline:3px solid var(--sky); outline-offset:2px;}
+  .password-field{position:relative;}
+  .password-field .email-input{padding-right:64px; margin-bottom:14px;}
+  .toggle-password{
+    position:absolute; top:0; right:2px; height:100%;
+    display:flex; align-items:center;
+    background:none; border:none; cursor:pointer;
+    font-family:'Quicksand', sans-serif; font-weight:700; font-size:.82rem;
+    color:var(--brown-deep); padding:0 14px;
+  }
+  .toggle-password:hover, .toggle-password:focus-visible{color:var(--brown);}
+  .toggle-password:focus-visible{outline:2px solid var(--sky); outline-offset:2px; border-radius:8px;}
   .widget-frame{display:none;}
   .widget-frame.active{
     display:block;
@@ -550,6 +581,11 @@
     touch-action:pan-y;
     -webkit-user-select:none; user-select:none;
   }
+  /* Base 4/3 is too short for narrow phones: the caption text (title +
+     paragraph) can run taller than that box, and since the frame clips
+     overflow for the slide/drag mechanics, the bottom of the text was
+     getting cut off. Taller ratio on small screens gives it room. */
+  @media (max-width:479px){ .storybook-frame{aspect-ratio:3/4;} }
   @media (min-width:560px){ .storybook-frame{aspect-ratio:16/10; border-radius:28px;} }
   @media (min-width:900px){ .storybook-frame{aspect-ratio:20/9; border-radius:34px;} }
   @media (min-width:1300px){ .storybook-frame{aspect-ratio:2.35/1;} }
@@ -887,6 +923,11 @@
     .story-seg.active{width:24px;}
   }
   @media (max-width:380px){
+    .scene-copy{padding:16px 16px 22px;}
+    .scene-title{font-size:1.2rem;}
+    .scene-text{font-size:.88rem;}
+  }
+  @media (max-width:380px){
     .story-count{display:none;}
   }
 
@@ -912,6 +953,7 @@
   .nav-account-btn.is-loggedin{border-color:var(--sage); background:var(--paper); color:var(--brown-deep);}
   .nav-account-btn:disabled{opacity:.6; cursor:default;}
   @media (max-width:600px){ .nav-account-btn{max-width:110px; font-size:.8rem; padding:8px 14px;} }
+  @media (max-width:380px){ .nav-account-btn{max-width:84px; padding:8px 10px;} }
 
   .nav-account-menu{
     position:absolute; top:calc(100% + 8px); right:0;
@@ -950,19 +992,24 @@
     position:relative; z-index:1;
     background:var(--paper);
     border-radius:24px;
-    padding:30px 28px 26px;
+    padding:46px 28px 26px;
     max-width:400px; width:100%;
-    max-height:88vh; overflow-y:auto;
+    max-height:88vh; overflow-y:auto; overflow-x:hidden;
     box-shadow:0 30px 60px rgba(0,0,0,.3);
     animation:pop-in .28s cubic-bezier(.2,.8,.25,1.15);
   }
+  /* Sits inside the panel's own padding box (not offset outside it) so it
+     never gets clipped by the panel's overflow-y:auto scroll container —
+     a negative-offset button used to be cut in half on some screens, and
+     forced an unwanted horizontal scrollbar since overflow-y:auto also
+     computes overflow-x to auto per spec. */
   .auth-modal-close{
-    position:absolute; top:-14px; right:-14px;
-    width:40px; height:40px; border-radius:50%;
-    background:var(--brown); color:#fff; border:3px solid var(--paper);
-    font-size:1.2rem; line-height:1; cursor:pointer;
+    position:absolute; top:12px; right:12px; z-index:2;
+    width:36px; height:36px; border-radius:50%;
+    background:var(--brown); color:#fff; border:none;
+    font-size:1.1rem; line-height:1; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    box-shadow:0 4px 10px rgba(0,0,0,.25);
+    box-shadow:0 3px 8px rgba(0,0,0,.25);
   }
 
   .auth-tabs{display:flex; gap:6px; margin-bottom:20px; background:var(--bg); border-radius:100px; padding:5px;}
@@ -997,12 +1044,31 @@
   .order-status{text-transform:capitalize;}
 
   @media (max-width:480px){
-    .auth-modal-panel{padding:26px 20px 22px;}
+    .auth-modal-panel{padding:44px 18px 22px;}
   }
 
   /* ---------- Google sign-in slot + "or" divider (v4) ---------- */
   #g_id_onload{display:none;} /* GIS's config div — invisible by design, not a layout element */
-  .g_id_signin{display:flex; justify-content:center; margin:2px 0 4px;}
+  /* google.accounts.id.renderButton() draws an iframe sized in real pixels,
+     so this wrapper gives it a consistent on-brand frame (matching the
+     rest of the modal's card/border language) and .google-signin-container
+     is what account.js measures to pick that pixel width — kept 100%
+     width and re-measured on resize so it never overflows on narrow
+     phones or looks undersized on wider screens. */
+  .google-signin-wrap{
+    width:100%;
+    padding:6px;
+    border:1px solid var(--line);
+    border-radius:100px;
+    background:#fff;
+    box-sizing:border-box;
+    margin:2px 0 4px;
+  }
+  .google-signin-container{
+    width:100%; min-height:40px;
+    display:flex; justify-content:center; align-items:center;
+    overflow:hidden;
+  }
   #googleAuthStatus{text-align:center; margin:0 0 4px;}
 
   .auth-divider{

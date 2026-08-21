@@ -11,6 +11,9 @@
 
   // ---- brand / nav ----
   set('navBrandName', C.brand.name);
+  set('navBrandShort', C.brand.shortName || C.brand.name);
+  const brandEl = document.getElementById('brand');
+  if (brandEl) brandEl.setAttribute('aria-label', C.brand.name);
   const navLinks = document.getElementById('navLinks');
   C.nav.links.forEach(l => {
     const a = document.createElement('a');
@@ -86,6 +89,7 @@
   set('authLoginSub', C.account.loginSub);
   document.getElementById('loginEmail').placeholder = C.account.emailPlaceholder;
   document.getElementById('loginPassword').placeholder = C.account.passwordPlaceholder;
+  set('toggleLoginPassword', C.account.showPasswordLabel);
   set('loginSubmitBtn', C.account.loginButtonLabel);
   set('switchToSignupText', C.account.switchToSignupText);
   set('switchToSignupLink', C.account.switchToSignupLink);
@@ -95,6 +99,7 @@
   set('authSignupSub', C.account.signupSub);
   document.getElementById('signupEmail').placeholder = C.account.emailPlaceholder;
   document.getElementById('signupPassword').placeholder = C.account.passwordPlaceholder;
+  set('toggleSignupPassword', C.account.showPasswordLabel);
   set('signupSubmitBtn', C.account.signupButtonLabel);
   set('switchToLoginText', C.account.switchToLoginText);
   set('switchToLoginLink', C.account.switchToLoginLink);

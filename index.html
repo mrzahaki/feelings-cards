@@ -112,7 +112,7 @@
 
 <nav class="topnav">
   <div class="wrap">
-    <div class="brand">
+    <div class="brand" id="brand">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <ellipse cx="32" cy="40" rx="24" ry="16" fill="#B4835A"/>
         <ellipse cx="32" cy="26" rx="17" ry="13" fill="#C79868"/>
@@ -124,7 +124,12 @@
         <circle cx="39" cy="27" r="2" fill="#3E3126"/>
         <ellipse cx="32" cy="33" rx="4" ry="2.6" fill="#8E6339"/>
       </svg>
-      <span id="navBrandName"></span>
+      <!-- Full name shows on wider screens; short form takes over on narrow
+           ones so it doesn't crowd the account/CTA buttons. Both spans are
+           aria-hidden and the real accessible name lives on #brand itself
+           (set by render.js), so screen readers hear it exactly once. -->
+      <span id="navBrandName" class="brand-full" aria-hidden="true"></span>
+      <span id="navBrandShort" class="brand-short" aria-hidden="true"></span>
     </div>
     <div class="nav-links" id="navLinks"><!-- injected --></div>
     <div class="nav-account" id="navAccount">
@@ -249,9 +254,13 @@
          data-client_id="1097376697543-jmnq0bnp3mfeef46r4jg84pi8hjcqf3i.apps.googleusercontent.com"
          data-callback="handleGoogleCredentialResponse"
          data-auto_prompt="false"></div>
-    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline"
-         data-text="continue_with" data-size="large" data-logo_alignment="left"
-         data-width="320"></div>
+    <!-- Rendered by account.js via google.accounts.id.renderButton() rather than
+         the declarative data-width="320px" div, so the button's actual pixel
+         width always matches this container (fixes overflow/horizontal-scroll
+         on narrow phones and keeps it centered/resized on rotation or resize). -->
+    <div class="google-signin-wrap">
+      <div class="google-signin-container" id="googleSignInContainer"></div>
+    </div>
     <p class="status-msg" id="googleAuthStatus"></p>
 
     <div class="auth-divider"><span id="authDividerText"></span></div>
@@ -264,8 +273,11 @@
     <form class="auth-pane" id="authPaneLogin" novalidate>
       <h3 id="authLoginTitle"></h3>
       <p class="auth-sub" id="authLoginSub"></p>
-      <input type="email" id="loginEmail" class="email-input" autocomplete="email" required>
-      <input type="password" id="loginPassword" class="email-input" autocomplete="current-password" required>
+      <input type="email" id="loginEmail" name="email" class="email-input" autocomplete="email" required>
+      <div class="password-field">
+        <input type="password" id="loginPassword" name="current-password" class="email-input" autocomplete="current-password" required>
+        <button type="button" class="toggle-password" id="toggleLoginPassword" data-target="loginPassword" aria-label="Show password">Show</button>
+      </div>
       <button type="submit" id="loginSubmitBtn" class="pay-btn"></button>
       <p class="status-msg" id="loginStatus"></p>
       <button type="button" class="auth-resend-link" id="resendVerificationBtn" hidden></button>
@@ -275,8 +287,11 @@
     <form class="auth-pane" id="authPaneSignup" hidden novalidate>
       <h3 id="authSignupTitle"></h3>
       <p class="auth-sub" id="authSignupSub"></p>
-      <input type="email" id="signupEmail" class="email-input" autocomplete="email" required>
-      <input type="password" id="signupPassword" class="email-input" autocomplete="new-password" required minlength="8">
+      <input type="email" id="signupEmail" name="email" class="email-input" autocomplete="email" required>
+      <div class="password-field">
+        <input type="password" id="signupPassword" name="new-password" class="email-input" autocomplete="new-password" required minlength="8">
+        <button type="button" class="toggle-password" id="toggleSignupPassword" data-target="signupPassword" aria-label="Show password">Show</button>
+      </div>
       <button type="submit" id="signupSubmitBtn" class="pay-btn"></button>
       <p class="status-msg" id="signupStatus"></p>
       <p class="auth-switch"><span id="switchToLoginText"></span> <a href="#" id="switchToLoginLink"></a></p>

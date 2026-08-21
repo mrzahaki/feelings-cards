@@ -135,6 +135,47 @@
   const authPaneSignup = document.getElementById('authPaneSignup');
   const resendBtn = document.getElementById('resendVerificationBtn');
 
+  // ---- Google button: rendered to fill its container's real width -----
+  // Google Identity Services draws the button as a cross-origin iframe at
+  // a fixed pixel width, so a hardcoded data-width (the old markup used
+  // 320) overflows on narrower phones and looks too small on wider modals.
+  // Rendering it ourselves lets us measure the actual container and keep
+  // it correctly sized whenever the modal opens or the viewport changes.
+  const googleContainer = document.getElementById('googleSignInContainer');
+  let googleButtonRendered = false;
+
+  function renderGoogleButton_() {
+    if (!googleContainer || typeof google === 'undefined' || !google.accounts || !google.accounts.id) return false;
+    const width = Math.max(200, Math.min(400, Math.round(googleContainer.getBoundingClientRect().width)));
+    if (!width) return false; // container not laid out yet (e.g. modal still hidden)
+    googleContainer.innerHTML = '';
+    google.accounts.id.renderButton(googleContainer, {
+      type: 'standard', theme: 'outline', shape: 'pill',
+      text: 'continue_with', size: 'large', logo_alignment: 'left',
+      width: width
+    });
+    googleButtonRendered = true;
+    return true;
+  }
+
+  // The gsi/client script loads async/defer, so it may not be ready the
+  // instant the modal first opens — retry briefly until it is.
+  function ensureGoogleButton_() {
+    if (renderGoogleButton_()) return;
+    let attempts = 0;
+    const retry = setInterval(() => {
+      attempts++;
+      if (renderGoogleButton_() || attempts > 20) clearInterval(retry);
+    }, 250);
+  }
+
+  let googleResizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (!authModal.classList.contains('open')) return;
+    clearTimeout(googleResizeTimer);
+    googleResizeTimer = setTimeout(renderGoogleButton_, 150);
+  });
+
   function openAuthModal(mode) {
     switchAuthTab(mode);
     document.getElementById('googleAuthStatus').textContent = '';
@@ -143,11 +184,18 @@
     document.body.style.overflow = 'hidden';
     const firstInput = mode === 'signup' ? document.getElementById('signupEmail') : document.getElementById('loginEmail');
     if (firstInput) firstInput.focus();
+    ensureGoogleButton_();
   }
   function closeAuthModal() {
     authModal.classList.remove('open');
     authModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+      const input = document.getElementById(btn.dataset.target);
+      if (input) input.type = 'password';
+      btn.textContent = C.account.showPasswordLabel;
+      btn.setAttribute('aria-label', 'Show password');
+    });
   }
   function switchAuthTab(mode) {
     const isLogin = mode !== 'signup';
@@ -309,6 +357,18 @@
   function escapeHtml_(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+
+  // ---- show/hide password toggles ----
+  document.querySelectorAll('.toggle-password').forEach(btn => {
+    const input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+    btn.addEventListener('click', () => {
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? C.account.showPasswordLabel : C.account.hidePasswordLabel;
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+  });
 
   // ---- checkout "sign in to check out" shortcut ----
   const checkoutSignInBtn = document.getElementById('checkoutSignInBtn');

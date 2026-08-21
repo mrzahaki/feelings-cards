@@ -17,6 +17,10 @@ window.SITE_CONFIG = {
   // ---- brand / nav -------------------------------------------------
   brand: {
     name: "Feelings & Friends",
+    // Shown instead of the full name on narrow screens, where "Feelings &
+    // Friends" next to the account button and the "Get the PDF" button
+    // was crowding/wrapping. Keep this short — a few characters.
+    shortName: "F&F",
   },
   nav: {
     links: [
@@ -61,6 +65,8 @@ window.SITE_CONFIG = {
 
     emailPlaceholder: "you@example.com",
     passwordPlaceholder: "At least 8 characters",
+    showPasswordLabel: "Show",
+    hidePasswordLabel: "Hide",
     resendLabel: "Resend verification email",
     signupSuccessNoteHtml: "Check <strong>{email}</strong> for a verification link, then come back and log in.",
 
@@ -87,7 +93,7 @@ window.SITE_CONFIG = {
 
   // ---- hero ----------------------------------------------------------
   hero: {
-    eyebrow: "✦ Instant PDF Download ✦",
+    eyebrow: "✦ Instant PDF Delivery ✦",
     headingLine1: "Sixty animal friends,",
     headingHighlight: "question",
     headingRest: "one gentle {hl} each.", // {hl} = headingHighlight, wrapped in a styled span
