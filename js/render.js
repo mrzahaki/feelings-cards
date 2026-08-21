@@ -70,10 +70,42 @@
     faqGrid.appendChild(div);
   });
 
+  // ---- account / auth modal / orders modal ----
+  // navAccountBtn's actual label (email vs. "Sign in") is set live by
+  // account.js once it knows whether a session exists — this just seeds
+  // the logged-out default so there's no flash of empty text before JS runs.
+  set('navAccountBtn', C.account.signedOutLabel);
+  set('navMyOrdersBtn', C.account.myOrdersLabel);
+  set('navLogoutBtn', C.account.logoutLabel);
+
+  set('authTabLogin', C.account.loginButtonLabel);
+  set('authTabSignup', C.account.signupButtonLabel);
+  set('authDividerText', C.account.authDividerText);
+
+  set('authLoginTitle', C.account.loginTitle);
+  set('authLoginSub', C.account.loginSub);
+  document.getElementById('loginEmail').placeholder = C.account.emailPlaceholder;
+  document.getElementById('loginPassword').placeholder = C.account.passwordPlaceholder;
+  set('loginSubmitBtn', C.account.loginButtonLabel);
+  set('switchToSignupText', C.account.switchToSignupText);
+  set('switchToSignupLink', C.account.switchToSignupLink);
+  set('resendVerificationBtn', C.account.resendLabel);
+
+  set('authSignupTitle', C.account.signupTitle);
+  set('authSignupSub', C.account.signupSub);
+  document.getElementById('signupEmail').placeholder = C.account.emailPlaceholder;
+  document.getElementById('signupPassword').placeholder = C.account.passwordPlaceholder;
+  set('signupSubmitBtn', C.account.signupButtonLabel);
+  set('switchToLoginText', C.account.switchToLoginText);
+  set('switchToLoginLink', C.account.switchToLoginLink);
+
+  set('ordersHeading', C.account.ordersHeading);
+
   // ---- checkout ----
   set('checkoutHeading', C.checkout.heading);
   setHtml('checkoutFormatNote', C.checkout.formatNoteHtml);
-  document.getElementById('buyerEmail').placeholder = C.checkout.emailPlaceholder;
+  set('checkoutLoggedOutNote', C.account.checkoutLoggedOutNote);
+  set('checkoutSignInBtn', C.account.checkoutSignInButtonLabel);
   set('payBtn', C.checkout.payButtonLabel);
   const coinRow = document.getElementById('coinRow');
   C.checkout.coins.forEach(coin => {

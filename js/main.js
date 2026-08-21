@@ -116,24 +116,22 @@
   }
 
   // ---- Checkout: create a fresh invoice per click, embed it inline ----
-  // Endpoint + copy come from config.js -> checkout
+  // Endpoint + copy come from config.js -> checkout. As of v3 this requires
+  // a logged-in account (account.js) — the buyer's email now comes from
+  // their session server-side, not a free-text field on this page.
   const CREATE_INVOICE_ENDPOINT = C.checkout.invoiceEndpoint;
   const payBtn = document.getElementById('payBtn');
   const payStatus = document.getElementById('payStatus');
-  const emailInput = document.getElementById('buyerEmail');
   const widgetFrame = document.getElementById('widgetFrame');
   const fallbackNote = document.getElementById('fallbackNote');
 
   payBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    if (!emailOk) {
+    if (!window.Account || !Account.isLoggedIn()) {
       payStatus.className = 'status-msg error';
-      payStatus.textContent = 'Please enter a valid email first — that\'s where your PDFs will be sent.';
-      emailInput.focus();
+      payStatus.textContent = 'Please sign in first.';
       return;
     }
+    const sessionToken = Account.getToken();
 
     payBtn.disabled = true;
     payBtn.textContent = 'Fetching checkout…';
@@ -146,7 +144,7 @@
       const resp = await fetch(CREATE_INVOICE_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
-        body: JSON.stringify({ email: email })
+        body: JSON.stringify({ sessionToken: sessionToken })
       });
       const data = await resp.json();
 
@@ -158,8 +156,7 @@
           'width="410" height="696" frameborder="0" scrolling="no" title="NOWPayments checkout">Can\'t load widget</iframe>';
         widgetFrame.classList.add('active');
         payBtn.style.display = 'none';
-        emailInput.disabled = true;
-        payStatus.textContent = 'Complete payment below. Your PDFs will be sent to ' + email + ' once it confirms.';
+        payStatus.textContent = 'Complete payment below. Your PDFs will be sent to ' + (data.email || Account.getEmail()) + ' once it confirms.';
         fallbackNote.innerHTML = 'Widget not loading? <a href="' + data.invoice_url + '" target="_blank" rel="noreferrer noopener">Open checkout in a new tab instead</a>.';
         widgetFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
@@ -176,3 +173,18 @@
       payBtn.textContent = C.checkout.payButtonLabel;
     }
   });
+
+  // If login state changes (logs out, or a stored session turns out to be
+  // expired) reset any in-progress checkout UI so it doesn't show a stale
+  // "complete payment" iframe tied to the previous account.
+  if (window.Account) {
+    Account.onChange(() => {
+      widgetFrame.classList.remove('active');
+      widgetFrame.innerHTML = '';
+      payBtn.style.display = '';
+      payBtn.disabled = false;
+      payBtn.textContent = C.checkout.payButtonLabel;
+      payStatus.textContent = '';
+      fallbackNote.textContent = C.checkout.fallbackNoteDefault;
+    });
+  }

@@ -19,6 +19,19 @@
 <meta name="author" content="Feelings & Friends">
 <link rel="canonical" href="https://zahak.me/feelings-cards/">
 
+<!--
+  Sign-in-with-Google + reCAPTCHA v3 keys, kept as plain HTML for the
+  same reason as the meta tags above: these load before config.js does,
+  so they can't be templated client-side. Both need to be kept in sync
+  by hand with apps-script-auth.gs (see that file's SETUP steps 7-8):
+    - reCAPTCHA site key below must match config.js -> account.recaptchaSiteKey,
+      and the matching SECRET key goes into apps-script-auth.gs.
+    - Google data-client_id below must match GOOGLE_CLIENT_ID in
+      apps-script-auth.gs.
+-->
+<script src="https://www.google.com/recaptcha/api.js?render=6LelOpEtAAAAAI-g3CL-kADSXszR4dFbO7SNdWGR"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <!-- Open Graph / Facebook, Discord, iMessage, etc. -->
 <meta property="og:type" content="product">
 <meta property="og:title" content="Feelings & Friends — 60 Printable Animal Emotion Cards">
@@ -114,6 +127,13 @@
       <span id="navBrandName"></span>
     </div>
     <div class="nav-links" id="navLinks"><!-- injected --></div>
+    <div class="nav-account" id="navAccount">
+      <button type="button" class="nav-account-btn" id="navAccountBtn"></button>
+      <div class="nav-account-menu" id="navAccountMenu" hidden>
+        <button type="button" id="navMyOrdersBtn"></button>
+        <button type="button" id="navLogoutBtn"></button>
+      </div>
+    </div>
     <a class="nav-cta" id="navCta" href="#checkout"></a>
   </div>
 </nav>
@@ -213,6 +233,67 @@
   </div>
 </div>
 
+<!-- Sign up / log in modal -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-modal-backdrop" id="authModalBackdrop"></div>
+  <div class="auth-modal-panel" role="dialog" aria-modal="true" aria-label="Sign in or create an account">
+    <button type="button" class="auth-modal-close" id="authModalClose" aria-label="Close">✕</button>
+
+    <!--
+      Google Identity Services' fully-declarative setup — no JS init call
+      needed, it reads these data- attributes itself once gsi/client has
+      loaded. data-client_id must match GOOGLE_CLIENT_ID in
+      apps-script-auth.gs (see index.html's <head> comment).
+    -->
+    <div id="g_id_onload"
+         data-client_id="1097376697543-jmnq0bnp3mfeef46r4jg84pi8hjcqf3i.apps.googleusercontent.com"
+         data-callback="handleGoogleCredentialResponse"
+         data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline"
+         data-text="continue_with" data-size="large" data-logo_alignment="left"
+         data-width="320"></div>
+    <p class="status-msg" id="googleAuthStatus"></p>
+
+    <div class="auth-divider"><span id="authDividerText"></span></div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab" id="authTabLogin" data-mode="login"></button>
+      <button type="button" class="auth-tab" id="authTabSignup" data-mode="signup"></button>
+    </div>
+
+    <form class="auth-pane" id="authPaneLogin" novalidate>
+      <h3 id="authLoginTitle"></h3>
+      <p class="auth-sub" id="authLoginSub"></p>
+      <input type="email" id="loginEmail" class="email-input" autocomplete="email" required>
+      <input type="password" id="loginPassword" class="email-input" autocomplete="current-password" required>
+      <button type="submit" id="loginSubmitBtn" class="pay-btn"></button>
+      <p class="status-msg" id="loginStatus"></p>
+      <button type="button" class="auth-resend-link" id="resendVerificationBtn" hidden></button>
+      <p class="auth-switch"><span id="switchToSignupText"></span> <a href="#" id="switchToSignupLink"></a></p>
+    </form>
+
+    <form class="auth-pane" id="authPaneSignup" hidden novalidate>
+      <h3 id="authSignupTitle"></h3>
+      <p class="auth-sub" id="authSignupSub"></p>
+      <input type="email" id="signupEmail" class="email-input" autocomplete="email" required>
+      <input type="password" id="signupPassword" class="email-input" autocomplete="new-password" required minlength="8">
+      <button type="submit" id="signupSubmitBtn" class="pay-btn"></button>
+      <p class="status-msg" id="signupStatus"></p>
+      <p class="auth-switch"><span id="switchToLoginText"></span> <a href="#" id="switchToLoginLink"></a></p>
+    </form>
+  </div>
+</div>
+
+<!-- Order history modal -->
+<div class="auth-modal" id="ordersModal" aria-hidden="true">
+  <div class="auth-modal-backdrop" id="ordersModalBackdrop"></div>
+  <div class="auth-modal-panel" role="dialog" aria-modal="true" aria-label="Your orders">
+    <button type="button" class="auth-modal-close" id="ordersModalClose" aria-label="Close">✕</button>
+    <h3 id="ordersHeading"></h3>
+    <div id="ordersList"><!-- injected --></div>
+  </div>
+</div>
+
 <section class="gallery" id="gallery">
   <div class="wrap">
     <div class="section-head reveal">
@@ -273,10 +354,21 @@
     <div class="checkout-panel reveal">
       <h2 id="checkoutHeading"></h2>
       <p class="format-note" id="checkoutFormatNote"></p>
-      <input type="email" id="buyerEmail" class="email-input" placeholder="you@example.com" required autocomplete="email">
-      <button type="button" id="payBtn" class="pay-btn"></button>
-      <p class="status-msg" id="payStatus"></p>
-      <div class="widget-frame" id="widgetFrame"></div>
+
+      <!-- Shown when no one is logged in -->
+      <div id="checkoutLoggedOut">
+        <p class="format-note" id="checkoutLoggedOutNote"></p>
+        <button type="button" id="checkoutSignInBtn" class="pay-btn"></button>
+      </div>
+
+      <!-- Shown once a session is active — account.js toggles these -->
+      <div id="checkoutLoggedIn" hidden>
+        <p class="status-msg" id="checkoutAsLabel"></p>
+        <button type="button" id="payBtn" class="pay-btn"></button>
+        <p class="status-msg" id="payStatus"></p>
+        <div class="widget-frame" id="widgetFrame"></div>
+      </div>
+
       <div class="coin-row" id="coinRow"><!-- injected --></div>
       <p class="fallback-note" id="fallbackNote"></p>
     </div>
@@ -299,9 +391,11 @@
   </div>
 </div>
 
-<!-- config.js must load first: main.js, render.js and story.js all read window.SITE_CONFIG -->
+<!-- config.js must load first: main.js, render.js, account.js and story.js all read window.SITE_CONFIG.
+     account.js loads before main.js because main.js's checkout button calls into it (Account.getToken()/onChange). -->
 <script src="config.js"></script>
 <script src="js/render.js"></script>
+<script src="js/account.js"></script>
 <script src="js/main.js"></script>
 <script src="js/story.js"></script>
 </body>

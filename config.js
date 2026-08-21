@@ -28,6 +28,51 @@ window.SITE_CONFIG = {
     ctaHref: "#checkout",
   },
 
+  // ---- account: signup / login / order history --------------------
+  // Endpoint = apps-script-auth.gs's Web App /exec URL (separate Apps
+  // Script project from the invoice + delivery ones — see that file's
+  // SETUP comments).
+  account: {
+    endpoint: "https://script.google.com/macros/s/AKfycbw84hK5u-a5YpQCX3in3Q8gJXCRVJeOAXdUS2SLta8nYZTxky64w2F9ud0YMke9P5mq/exec",
+
+    // reCAPTCHA v3 site key (public — safe in client-side code, unlike the
+    // secret key which only lives in apps-script-auth.gs). Must match the
+    // key in index.html's reCAPTCHA <script> tag. See that script's SETUP
+    // step 7 for where to get one.
+    recaptchaSiteKey: "6LelOpEtAAAAAI-g3CL-kADSXszR4dFbO7SNdWGR",
+
+    authDividerText: "or continue with email",
+
+    signedOutLabel: "Sign in",
+    myOrdersLabel: "My orders",
+    logoutLabel: "Log out",
+
+    loginTitle: "Welcome back",
+    loginSub: "Log in to check out or see your past orders.",
+    loginButtonLabel: "Log in",
+    switchToSignupText: "New here?",
+    switchToSignupLink: "Create an account",
+
+    signupTitle: "Create your account",
+    signupSub: "You'll need an account so we know where to send your cards, and so you can find them again later.",
+    signupButtonLabel: "Sign up",
+    switchToLoginText: "Already have an account?",
+    switchToLoginLink: "Log in",
+
+    emailPlaceholder: "you@example.com",
+    passwordPlaceholder: "At least 8 characters",
+    resendLabel: "Resend verification email",
+    signupSuccessNoteHtml: "Check <strong>{email}</strong> for a verification link, then come back and log in.",
+
+    checkoutLoggedOutNote: "Sign in first — your PDFs get delivered to your account email, and you'll be able to find them again from “My orders.”",
+    checkoutSignInButtonLabel: "Sign in to check out",
+    checkoutAsPrefix: "Checking out as",
+
+    ordersHeading: "Your orders",
+    ordersEmptyText: "No orders yet — they'll show up here right after your first purchase.",
+    ordersStatusLabel: "Status",
+  },
+
   // ---- <head> meta (mirror these into index.html's <head> by hand) -
   meta: {
     pageTitle: "Feelings & Friends — 60 Printable Animal Emotion Cards (PDF Download)",
@@ -36,7 +81,7 @@ window.SITE_CONFIG = {
     canonical: "https://zahak.me/feelings-cards/",
     ogImage: "https://zahak.me/feelings-cards/images/grid/card-01.jpg",
     ogImageAlt: "Sample feelings cards: Oopsie Armadillo and Grumpy Bear",
-    price: "9.99",
+    price: "19.99",
     currency: "USD",
   },
 
@@ -200,8 +245,11 @@ window.SITE_CONFIG = {
     payButtonLabel: "Pay $9.99 & get the deck",
     price: "9.99",
     coins: ["Bitcoin", "Monero", "Ethereum", "+300 more"],
-    fallbackNoteDefault: "Enter your email and click Pay — checkout will appear right here on the page.",
-    // Google Apps Script endpoint that creates a fresh NOWPayments invoice
+    fallbackNoteDefault: "Click Pay — checkout will appear right here on the page.",
+    // Google Apps Script endpoint that creates a fresh NOWPayments invoice.
+    // As of v3 this endpoint requires a sessionToken from a logged-in
+    // account (see apps-script-create-invoice.gs) — account.js handles
+    // sending it; you don't need to change anything here for that.
     invoiceEndpoint: "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec",
   },
 

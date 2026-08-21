@@ -889,3 +889,127 @@
   @media (max-width:380px){
     .story-count{display:none;}
   }
+
+  /* ---------- Account nav + auth/orders modals (v3) ---------- */
+  .nav-account{position:relative;}
+  .nav-account-btn{
+    background:transparent;
+    border:2px solid var(--line);
+    color:var(--ink);
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    padding:9px 18px;
+    border-radius:100px;
+    cursor:pointer;
+    max-width:180px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .nav-account-btn:hover{border-color:var(--brown); background:var(--paper);}
+  .nav-account-btn.is-loggedin{border-color:var(--sage); background:var(--paper); color:var(--brown-deep);}
+  .nav-account-btn:disabled{opacity:.6; cursor:default;}
+  @media (max-width:600px){ .nav-account-btn{max-width:110px; font-size:.8rem; padding:8px 14px;} }
+
+  .nav-account-menu{
+    position:absolute; top:calc(100% + 8px); right:0;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    padding:6px;
+    min-width:160px;
+    z-index:50;
+  }
+  .nav-account-menu button{
+    display:block; width:100%; text-align:left;
+    background:none; border:none; cursor:pointer;
+    padding:10px 12px; border-radius:10px;
+    font-family:'Quicksand',sans-serif; font-weight:600; font-size:.88rem; color:var(--ink);
+    transition:background .15s ease;
+  }
+  .nav-account-menu button:hover{background:var(--bg);}
+
+  /* Sign-up/log-in modal + order-history modal — same recipe as .lightbox
+     and .story-modal above (backdrop + pop-in panel), just parameterized
+     for a form instead of an image. */
+  .auth-modal{
+    position:fixed; inset:0; z-index:200;
+    display:none; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .auth-modal.open{display:flex;}
+  .auth-modal-backdrop{
+    position:absolute; inset:0;
+    background:rgba(62,49,38,.55);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  }
+  .auth-modal-panel{
+    position:relative; z-index:1;
+    background:var(--paper);
+    border-radius:24px;
+    padding:30px 28px 26px;
+    max-width:400px; width:100%;
+    max-height:88vh; overflow-y:auto;
+    box-shadow:0 30px 60px rgba(0,0,0,.3);
+    animation:pop-in .28s cubic-bezier(.2,.8,.25,1.15);
+  }
+  .auth-modal-close{
+    position:absolute; top:-14px; right:-14px;
+    width:40px; height:40px; border-radius:50%;
+    background:var(--brown); color:#fff; border:3px solid var(--paper);
+    font-size:1.2rem; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 10px rgba(0,0,0,.25);
+  }
+
+  .auth-tabs{display:flex; gap:6px; margin-bottom:20px; background:var(--bg); border-radius:100px; padding:5px;}
+  .auth-tab{
+    flex:1; text-align:center;
+    padding:9px 14px; border-radius:100px; border:none; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:.92rem;
+    background:transparent; color:var(--ink-soft);
+    transition:background .15s ease, color .15s ease;
+  }
+  .auth-tab.active{background:var(--paper); color:var(--brown-deep); box-shadow:var(--shadow);}
+
+  .auth-pane h3{font-size:1.25rem; margin-bottom:6px; text-align:center;}
+  .auth-sub{font-size:.9rem; color:var(--ink-soft); text-align:center; margin:0 0 18px;}
+  .auth-switch{text-align:center; font-size:.85rem; color:var(--ink-soft); margin-top:14px;}
+  .auth-switch a{color:var(--brown-deep); font-weight:700; text-decoration:underline; text-decoration-color:var(--yellow);}
+
+  .auth-resend-link{
+    display:block; margin:2px auto 0; background:none; border:none; cursor:pointer;
+    font-size:.85rem; font-weight:700; color:var(--brown-deep);
+    text-decoration:underline; text-decoration-color:var(--yellow); padding:4px;
+  }
+  .auth-resend-link:disabled{opacity:.6; cursor:default;}
+
+  /* ---------- Order history rows ---------- */
+  .order-row{
+    border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:10px;
+  }
+  .order-row-top{display:flex; justify-content:space-between; gap:10px; font-size:.85rem; font-weight:700; color:var(--ink);}
+  .order-row-bottom{display:flex; justify-content:space-between; gap:10px; font-size:.82rem; color:var(--ink-soft); margin-top:4px;}
+  .order-status{text-transform:capitalize;}
+
+  @media (max-width:480px){
+    .auth-modal-panel{padding:26px 20px 22px;}
+  }
+
+  /* ---------- Google sign-in slot + "or" divider (v4) ---------- */
+  #g_id_onload{display:none;} /* GIS's config div — invisible by design, not a layout element */
+  .g_id_signin{display:flex; justify-content:center; margin:2px 0 4px;}
+  #googleAuthStatus{text-align:center; margin:0 0 4px;}
+
+  .auth-divider{
+    display:flex; align-items:center; gap:12px;
+    margin:18px 0 16px;
+    color:var(--ink-soft); font-size:.8rem; font-weight:600;
+  }
+  .auth-divider::before, .auth-divider::after{
+    content:''; flex:1; height:1px; background:var(--line);
+  }
