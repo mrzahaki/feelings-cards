@@ -463,12 +463,44 @@
   </div>
 </div>
 
+
+<!-- Support chat: logged-in buyers only. Hidden by default (both the
+     `hidden` attribute here AND support.js's own Account.isLoggedIn()
+     check below gate visibility, so there's no flash of the launcher
+     before account.js has confirmed a session one way or the other). -->
+<button type="button" id="supportLauncher" class="support-launcher" hidden aria-haspopup="dialog" aria-expanded="false" aria-controls="supportPanel">
+  <span class="support-launcher-icon" aria-hidden="true">💬</span>
+  <span id="supportLauncherLabel" class="support-launcher-label"></span>
+  <span id="supportBadge" class="support-badge" hidden>0</span>
+</button>
+
+<div class="support-panel" id="supportPanel" role="dialog" aria-modal="false" aria-label="Support chat" aria-hidden="true" hidden>
+  <div class="support-panel-header">
+    <div>
+      <h3 id="supportPanelTitle"></h3>
+      <p class="support-panel-subtitle" id="supportPanelSubtitle"></p>
+    </div>
+    <button type="button" class="support-close" id="supportClose" aria-label="Close chat">✕</button>
+  </div>
+
+  <div class="support-messages" id="supportMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+  <form class="support-form" id="supportForm">
+    <label class="visually-hidden" for="supportInput">Message to support</label>
+    <textarea id="supportInput" class="support-input" rows="1" required></textarea>
+    <button type="submit" id="supportSendBtn" class="support-send"></button>
+  </form>
+  <p class="status-msg support-status" id="supportStatus" role="status"></p>
+</div>
+
 <!-- config.js must load first: main.js, render.js, account.js and story.js all read window.SITE_CONFIG.
-     account.js loads before main.js because main.js's checkout button calls into it (Account.getToken()/onChange). -->
+     account.js loads before main.js because main.js's checkout button calls into it (Account.getToken()/onChange).
+     support.js loads after account.js for the same reason (Account.isLoggedIn()/onChange/getToken/getEmail). -->
 <script src="config.js"></script>
 <script src="js/render.js"></script>
 <script src="js/account.js"></script>
 <script src="js/main.js"></script>
 <script src="js/story.js"></script>
+<script src="js/support.js"></script>
 </body>
 </html>

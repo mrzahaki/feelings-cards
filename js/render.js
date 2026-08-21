@@ -129,4 +129,23 @@
   // ---- footer ----
   setHtml('footerDelivery', C.footer.deliveryTextHtml);
   set('footerNote', C.footer.note);
+
+  // ---- support chat (widget only shows once support.js confirms the
+  // visitor is logged in — see that file) ----
+  if (C.support) {
+    set('supportLauncherLabel', C.support.launcherLabel);
+    const launcherBtn = document.getElementById('supportLauncher');
+    if (launcherBtn) launcherBtn.setAttribute('aria-label', C.support.launcherAriaLabel);
+    set('supportPanelTitle', C.support.panelTitle);
+    set('supportPanelSubtitle', C.support.panelSubtitle);
+    const closeBtn = document.getElementById('supportClose');
+    if (closeBtn) closeBtn.setAttribute('aria-label', C.support.closeLabel);
+    const input = document.getElementById('supportInput');
+    if (input) {
+      input.placeholder = C.support.inputPlaceholder;
+      input.setAttribute('aria-label', C.support.inputAriaLabel);
+      input.maxLength = C.support.charLimit;
+    }
+    set('supportSendBtn', C.support.sendLabel);
+  }
 })();

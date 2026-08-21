@@ -288,6 +288,30 @@ window.SITE_CONFIG = {
     invoiceEndpoint: "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec",
   },
 
+  // ---- support chat (logged-in buyers only) --------------------------------
+  // Endpoint = apps-script-support.gs's Web App /exec URL (a fourth,
+  // separate Apps Script project — see that file's SETUP comments).
+  // Messages sent here are relayed to a Telegram bot; replies typed in
+  // Telegram come back here on the widget's next poll.
+  support: {
+    endpoint: "https://script.google.com/macros/s/AKfycbw-OEzryxjH_xjBJb2onsikRVw2XCsK5Geub_PSC2WdkNxIX0a63x67F1kQ6U_E5JHQBQ/exec",
+    launcherLabel: "Chat with us",
+    launcherAriaLabel: "Open support chat",
+    panelTitle: "Support chat",
+    panelSubtitle: "We usually reply within a day.",
+    emptyStateText: "Ask us anything about your order, delivery, or the cards themselves — a real person reads every message.",
+    inputPlaceholder: "Type a message…",
+    inputAriaLabel: "Message to support",
+    sendLabel: "Send",
+    sendingLabel: "Sending…",
+    closeLabel: "Close chat",
+    youLabel: "You",
+    supportLabel: "Support",
+    errorGeneric: "Couldn't send that — please try again in a moment.",
+    errorTooLong: "That message is too long.",
+    charLimit: 1500,
+  },
+
   // ---- footer -------------------------------------------------------------
   footer: {
     // PDFs are delivered automatically (apps-script-ipn.gs) once payment
