@@ -943,7 +943,11 @@
     padding:9px 18px;
     border-radius:100px;
     cursor:pointer;
-    max-width:180px;
+    /* Button text is always a short, fixed label ("Sign in" / "Account")
+       now — the full email lives in the dropdown instead (see
+       .nav-account-menu-email below) — but keep a modest cap + ellipsis
+       as a safety net in case a translated label ever runs long. */
+    max-width:140px;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
@@ -952,8 +956,8 @@
   .nav-account-btn:hover{border-color:var(--brown); background:var(--paper);}
   .nav-account-btn.is-loggedin{border-color:var(--sage); background:var(--paper); color:var(--brown-deep);}
   .nav-account-btn:disabled{opacity:.6; cursor:default;}
-  @media (max-width:600px){ .nav-account-btn{max-width:110px; font-size:.8rem; padding:8px 14px;} }
-  @media (max-width:380px){ .nav-account-btn{max-width:84px; padding:8px 10px;} }
+  @media (max-width:600px){ .nav-account-btn{font-size:.8rem; padding:8px 14px;} }
+  @media (max-width:380px){ .nav-account-btn{padding:8px 10px;} }
 
   .nav-account-menu{
     position:absolute; top:calc(100% + 8px); right:0;
@@ -962,9 +966,24 @@
     border-radius:16px;
     box-shadow:var(--shadow);
     padding:6px;
-    min-width:160px;
+    min-width:200px;
+    max-width:min(280px, calc(100vw - 32px));
     z-index:50;
   }
+  .nav-account-menu-email{
+    padding:8px 12px 10px;
+    margin-bottom:4px;
+    border-bottom:1px solid var(--line);
+    font-family:'Quicksand',sans-serif;
+    font-size:.78rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    /* Long addresses wrap onto a second line here instead of truncating —
+       there's room in an open dropdown that there isn't in the pill. */
+    word-break:break-all;
+    line-height:1.35;
+  }
+  .nav-account-menu-email:empty{display:none;}
   .nav-account-menu button{
     display:block; width:100%; text-align:left;
     background:none; border:none; cursor:pointer;

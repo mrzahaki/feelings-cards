@@ -48,6 +48,13 @@ window.SITE_CONFIG = {
     authDividerText: "or continue with email",
 
     signedOutLabel: "Sign in",
+    // Shown on the collapsed nav button once logged in — short and fixed-
+    // width on purpose (the full email lives inside the opened dropdown,
+    // via menuSignedInAsPrefix below, instead of being crammed into the
+    // pill button where it either overflows small screens or gets cut
+    // off mid-address on bigger ones).
+    loggedInLabel: "Account",
+    menuSignedInAsPrefix: "Signed in as",
     myOrdersLabel: "My orders",
     logoutLabel: "Log out",
 

@@ -79,16 +79,31 @@
   const navMyOrdersBtn = document.getElementById('navMyOrdersBtn');
   const navLogoutBtn = document.getElementById('navLogoutBtn');
   const navAccount = document.getElementById('navAccount');
+  const navAccountMenuEmail = document.getElementById('navAccountMenuEmail');
 
   function renderAccountUI() {
     if (checking) {
       navAccountBtn.textContent = '…';
       navAccountBtn.disabled = true;
+      navAccountBtn.removeAttribute('title');
     } else {
       navAccountBtn.disabled = false;
-      navAccountBtn.textContent = sessionEmail || C.account.signedOutLabel;
+      // Short, fixed label on the pill itself — the actual email lives in
+      // the dropdown (navAccountMenuEmail below) and as a hover tooltip /
+      // accessible name here, so it never has to fit inside the button.
+      navAccountBtn.textContent = sessionEmail ? C.account.loggedInLabel : C.account.signedOutLabel;
       navAccountBtn.classList.toggle('is-loggedin', !!sessionEmail);
+      if (sessionEmail) {
+        navAccountBtn.title = sessionEmail;
+        navAccountBtn.setAttribute('aria-label', C.account.loggedInLabel + ': ' + sessionEmail);
+      } else {
+        navAccountBtn.removeAttribute('title');
+        navAccountBtn.removeAttribute('aria-label');
+      }
       if (!sessionEmail) navAccountMenu.hidden = true;
+    }
+    if (navAccountMenuEmail) {
+      navAccountMenuEmail.textContent = sessionEmail ? (C.account.menuSignedInAsPrefix + ' ' + sessionEmail) : '';
     }
 
     const loggedOutEl = document.getElementById('checkoutLoggedOut');
