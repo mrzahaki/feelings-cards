@@ -1175,14 +1175,29 @@
      terms without needing extra branding text elsewhere on the page —
      see .recaptcha-notice below anyway, as a belt-and-suspenders measure
      for very small screens where the shrunk badge is easy to miss. */
+  /* Google's badge box is actually 256px wide: a text panel ("protected
+     by reCAPTCHA") on the left that slides into view on hover, and the
+     icon itself sitting in the rightmost ~70px. The old transform:scale
+     only shrank the whole thing — the text panel could still slide out
+     on hover, just smaller. Clamping the box's own width to the icon's
+     width and clipping overflow means there's structurally no room for
+     the text panel to ever become visible, hover or not — so this is
+     always just the small icon, exactly as if "logo only" were an
+     official option (it isn't; this is the standard workaround). The
+     required "this site is protected by reCAPTCHA" disclosure still
+     satisfies Google's terms via .recaptcha-notice's visible text below
+     the auth form, so nothing about hiding the badge's own text panel
+     costs the site anything on that front. */
   .grecaptcha-badge{
-    transform:scale(.55);
+    width:70px !important;
+    overflow:hidden !important;
+    transform:scale(.4);
     transform-origin:bottom right;
     right:2px !important;
     bottom:2px !important;
   }
   @media (max-width:480px){
-    .grecaptcha-badge{ transform:scale(.4); }
+    .grecaptcha-badge{ transform:scale(.32); }
   }
 
   .recaptcha-notice{
