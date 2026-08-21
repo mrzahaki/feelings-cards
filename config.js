@@ -46,6 +46,11 @@ window.SITE_CONFIG = {
     recaptchaSiteKey: "6LelOpEtAAAAAI-g3CL-kADSXszR4dFbO7SNdWGR",
 
     authDividerText: "or continue with email",
+    // Google's own suggested wording for when the badge itself is small/
+    // easy to miss (see styles.css .grecaptcha-badge) — required reading
+    // if you ever change the wording: policies.google.com/privacy and
+    // policies.google.com/terms are the two links this must point to.
+    recaptchaNoticeHtml: "This site is protected by reCAPTCHA and the Google <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noreferrer noopener\">Privacy Policy</a> and <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noreferrer noopener\">Terms of Service</a> apply.",
 
     signedOutLabel: "Sign in",
     // Shown on the collapsed nav button once logged in — short and fixed-
@@ -268,8 +273,10 @@ window.SITE_CONFIG = {
 
   // ---- footer -------------------------------------------------------------
   footer: {
-    supportEmail: "mrzahaki2@gmail.com",
-    deliveryTextHtml: "After paying, email your payment confirmation to <strong>{email}</strong> and you'll receive both PDFs (30-page and 60-page versions) right away.",
-    note: "Printer cropping a card oddly, or want the raw images instead of a PDF? Just reply to your delivery email and ask — happy to send those over.",
+    // PDFs are delivered automatically (apps-script-ipn.gs) once payment
+    // confirms — no manual "email your receipt" step, so no support
+    // address needs to be shown here at all.
+    deliveryTextHtml: "Your PDFs are delivered automatically to your account email as soon as payment confirms — no extra steps needed. Check <strong>My orders</strong> if you don't see it.",
+    note: "Printer cropping a card oddly, or want the raw individual card images instead of a PDF? Just reply to the delivery email once your order comes through and we'll sort it out.",
   },
 };

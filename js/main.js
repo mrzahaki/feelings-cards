@@ -167,7 +167,7 @@
       }
     } catch (err) {
       payStatus.className = 'status-msg error';
-      payStatus.textContent = 'Network error — please try again, or email ' + C.footer.supportEmail + ' to order directly.';
+      payStatus.textContent = 'Network error — please try again in a moment.';
     } finally {
       payBtn.disabled = false;
       payBtn.textContent = C.checkout.payButtonLabel;

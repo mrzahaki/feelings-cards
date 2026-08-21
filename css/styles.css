@@ -1098,3 +1098,32 @@
   .auth-divider::before, .auth-divider::after{
     content:''; flex:1; height:1px; background:var(--line);
   }
+
+  /* ---------- reCAPTCHA v3 badge ----------
+     This element isn't ours — Google's own api.js script injects a fixed
+     floating badge (.grecaptcha-badge) directly into the page, at a
+     default size that's oversized for a small store's footer and gets
+     worse on narrow viewports since it doesn't scale down on its own.
+     Shrinking it with a CSS transform (rather than hiding it outright)
+     keeps it visibly present, which is what satisfies Google's reCAPTCHA
+     terms without needing extra branding text elsewhere on the page —
+     see .recaptcha-notice below anyway, as a belt-and-suspenders measure
+     for very small screens where the shrunk badge is easy to miss. */
+  .grecaptcha-badge{
+    transform:scale(.55);
+    transform-origin:bottom right;
+    right:2px !important;
+    bottom:2px !important;
+  }
+  @media (max-width:480px){
+    .grecaptcha-badge{ transform:scale(.4); }
+  }
+
+  .recaptcha-notice{
+    text-align:center;
+    font-size:.72rem;
+    line-height:1.4;
+    color:var(--ink-soft);
+    margin:14px 2px 0;
+  }
+  .recaptcha-notice a{color:var(--ink-soft); text-decoration:underline;}

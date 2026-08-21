@@ -103,6 +103,7 @@
   set('signupSubmitBtn', C.account.signupButtonLabel);
   set('switchToLoginText', C.account.switchToLoginText);
   set('switchToLoginLink', C.account.switchToLoginLink);
+  setHtml('recaptchaNotice', C.account.recaptchaNoticeHtml);
 
   set('ordersHeading', C.account.ordersHeading);
 
@@ -122,6 +123,6 @@
   set('fallbackNote', C.checkout.fallbackNoteDefault);
 
   // ---- footer ----
-  setHtml('footerDelivery', C.footer.deliveryTextHtml.replace('{email}', C.footer.supportEmail));
+  setHtml('footerDelivery', C.footer.deliveryTextHtml);
   set('footerNote', C.footer.note);
 })();
