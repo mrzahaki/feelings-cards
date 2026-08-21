@@ -99,11 +99,15 @@
   set('authSignupSub', C.account.signupSub);
   document.getElementById('signupEmail').placeholder = C.account.emailPlaceholder;
   document.getElementById('signupPassword').placeholder = C.account.passwordPlaceholder;
+  document.getElementById('signupPasswordConfirm').placeholder = C.account.confirmPasswordPlaceholder;
   set('toggleSignupPassword', C.account.showPasswordLabel);
+  set('toggleSignupPasswordConfirm', C.account.showPasswordLabel);
   set('signupSubmitBtn', C.account.signupButtonLabel);
   set('switchToLoginText', C.account.switchToLoginText);
   set('switchToLoginLink', C.account.switchToLoginLink);
   setHtml('recaptchaNotice', C.account.recaptchaNoticeHtml);
+  set('ruleLen', C.account.pwRuleLenText);
+  set('ruleVariety', C.account.pwRuleVarietyText);
 
   set('ordersHeading', C.account.ordersHeading);
 

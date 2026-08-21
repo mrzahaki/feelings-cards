@@ -34,6 +34,126 @@
     openModal: (mode) => openAuthModal(mode || 'login'),
   };
 
+  // ---- client-side validation helpers ----
+  // These exist purely for fast, friendly feedback — they never replace
+  // the real checks in apps-script-auth.gs, which re-validates everything
+  // from scratch since a client can always be bypassed. Their only job
+  // here is to stop obviously-empty or obviously-malformed submissions
+  // from ever reaching the network, and to tell the person exactly which
+  // field needs fixing instead of a generic "something went wrong" after
+  // a round trip.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function isValidEmailClient_(email) { return EMAIL_RE.test(email); }
+
+  function setFieldError_(fieldId, errorId, msg) {
+    const field = document.getElementById(fieldId);
+    const err = document.getElementById(errorId);
+    if (err) err.textContent = msg || '';
+    if (field) {
+      field.classList.toggle('invalid', !!msg);
+      if (msg) {
+        field.classList.remove('shake');
+        // restart the shake animation even if it's already mid-run
+        void field.offsetWidth;
+        field.classList.add('shake');
+      }
+    }
+  }
+  function clearFieldErrors_(...pairs) {
+    pairs.forEach(([fieldId, errorId]) => setFieldError_(fieldId, errorId, ''));
+  }
+
+  // Rough client-side password strength estimate (0-4). Not trying to be
+  // a real entropy calculator — just enough to give someone a visual nudge
+  // while they type. The actual floor (8 chars, common-password blocklist)
+  // is enforced server-side regardless of what this shows.
+  function computeStrength_(password) {
+    if (!password) return 0;
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    const varietyCount = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(re => re.test(password)).length;
+    if (varietyCount >= 2) score++;
+    if (varietyCount >= 3) score++;
+    return Math.min(score, 4);
+  }
+
+  function updatePasswordUI_(password) {
+    const meter = document.getElementById('signupPwStrength');
+    const bar = document.getElementById('signupPwStrengthBar');
+    const label = document.getElementById('signupPwStrengthLabel');
+    const ruleLen = document.getElementById('ruleLen');
+    const ruleVariety = document.getElementById('ruleVariety');
+    const labels = C.account.pwStrengthLabels || { weak: 'Weak', fair: 'Fair', good: 'Good', strong: 'Strong' };
+
+    meter.hidden = !password;
+    if (password) {
+      const score = computeStrength_(password);
+      const pct = [10, 35, 65, 85, 100][score];
+      const tiers = ['weak', 'weak', 'fair', 'good', 'strong'];
+      const tier = tiers[score];
+      bar.style.width = pct + '%';
+      bar.className = 'pw-strength-bar tier-' + tier;
+      label.textContent = labels[tier] || '';
+    }
+
+    const lenOk = password.length >= 8;
+    const varietyOk = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(re => re.test(password)).length >= 2;
+    ruleLen.classList.toggle('met', lenOk);
+    ruleVariety.classList.toggle('met', varietyOk);
+  }
+
+  const signupPasswordEl = document.getElementById('signupPassword');
+  const signupPasswordConfirmEl = document.getElementById('signupPasswordConfirm');
+  if (signupPasswordEl) {
+    signupPasswordEl.addEventListener('input', () => {
+      updatePasswordUI_(signupPasswordEl.value);
+      if (signupPasswordConfirmEl.value) checkPasswordsMatch_();
+    });
+  }
+  function checkPasswordsMatch_() {
+    if (!signupPasswordConfirmEl.value) return true;
+    const match = signupPasswordConfirmEl.value === signupPasswordEl.value;
+    setFieldError_('signupPasswordConfirm', 'signupPasswordConfirmError', match ? '' : C.account.errorPasswordConfirmMismatch);
+    return match;
+  }
+  if (signupPasswordConfirmEl) signupPasswordConfirmEl.addEventListener('input', checkPasswordsMatch_);
+
+  // ---- client-side login-attempt throttle ----
+  // A soft, purely-cosmetic cooldown layered on top of the real,
+  // server-enforced rate limit + account lockout in apps-script-auth.gs.
+  // This just means someone mashing the login button gets instant,
+  // local feedback instead of firing a request every click — it can't be
+  // trusted as the actual defense (a bot skips the browser entirely) but
+  // it cuts down on wasted round trips and reads as more considered UX.
+  const THROTTLE_KEY = 'ff_login_throttle';
+  function getThrottleState_() {
+    try {
+      const raw = localStorage.getItem(THROTTLE_KEY);
+      if (!raw) return { fails: 0, until: 0 };
+      const parsed = JSON.parse(raw);
+      return { fails: Number(parsed.fails) || 0, until: Number(parsed.until) || 0 };
+    } catch (e) { return { fails: 0, until: 0 }; }
+  }
+  function setThrottleState_(state) {
+    try { localStorage.setItem(THROTTLE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+  function registerLoginFailure_() {
+    const state = getThrottleState_();
+    state.fails += 1;
+    // Progressive backoff: 3rd fail = 5s, 4th = 15s, 5th+ = 30s. Kept short
+    // on purpose — the real ceiling is the server's 8-attempt lockout.
+    if (state.fails >= 5) state.until = Date.now() + 30000;
+    else if (state.fails === 4) state.until = Date.now() + 15000;
+    else if (state.fails === 3) state.until = Date.now() + 5000;
+    setThrottleState_(state);
+  }
+  function registerLoginSuccess_() { setThrottleState_({ fails: 0, until: 0 }); }
+  function throttleSecondsLeft_() {
+    const state = getThrottleState_();
+    return Math.max(0, Math.ceil((state.until - Date.now()) / 1000));
+  }
+
   async function callApi(action, payload) {
     try {
       const resp = await fetch(ENDPOINT, {
@@ -219,6 +339,11 @@
     authPaneLogin.hidden = !isLogin;
     authPaneSignup.hidden = isLogin;
     resendBtn.hidden = true;
+    clearFieldErrors_(
+      ['loginEmail', 'loginEmailError'], ['loginPassword', 'loginPasswordError'],
+      ['signupEmail', 'signupEmailError'], ['signupPassword', 'signupPasswordError'],
+      ['signupPasswordConfirm', 'signupPasswordConfirmError']
+    );
   }
 
   authModalClose.addEventListener('click', closeAuthModal);
@@ -233,23 +358,50 @@
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
+    const hp = document.getElementById('loginHp').value;
     const status = document.getElementById('loginStatus');
     const btn = document.getElementById('loginSubmitBtn');
 
     status.className = 'status-msg';
     status.textContent = '';
     resendBtn.hidden = true;
-    btn.disabled = true;
+    clearFieldErrors_(['loginEmail', 'loginEmailError'], ['loginPassword', 'loginPasswordError']);
 
+    // A filled honeypot means a script filled every input on the form —
+    // no real visitor can see or reach it. Fail the same way a wrong
+    // password would, without ever calling the API, so nothing about the
+    // response tips the bot off that it was caught by this specific check.
+    if (hp) {
+      status.className = 'status-msg error';
+      status.textContent = 'Incorrect email or password.';
+      return;
+    }
+
+    let hasError = false;
+    if (!email) { setFieldError_('loginEmail', 'loginEmailError', C.account.errorEmailRequired); hasError = true; }
+    else if (!isValidEmailClient_(email)) { setFieldError_('loginEmail', 'loginEmailError', C.account.errorEmailInvalid); hasError = true; }
+    if (!password) { setFieldError_('loginPassword', 'loginPasswordError', C.account.errorPasswordRequired); hasError = true; }
+    if (hasError) return;
+
+    const waitSec = throttleSecondsLeft_();
+    if (waitSec > 0) {
+      status.className = 'status-msg error';
+      status.textContent = (C.account.errorTooManyClientAttempts || 'Too many attempts — please wait {sec}s before trying again.').replace('{sec}', waitSec);
+      return;
+    }
+
+    btn.disabled = true;
     const recaptchaToken = await getRecaptchaToken_('login');
-    const data = await callApi('login', { email: email, password: password, recaptchaToken: recaptchaToken });
+    const data = await callApi('login', { email: email, password: password, recaptchaToken: recaptchaToken, hp: hp });
     btn.disabled = false;
 
     if (data.ok) {
+      registerLoginSuccess_();
       setSession(data.sessionToken, data.email);
       closeAuthModal();
       authPaneLogin.reset();
     } else {
+      registerLoginFailure_();
       status.className = 'status-msg error';
       status.textContent = data.error || 'Could not log in — please try again.';
       if (data.error && data.error.indexOf('verify your email') !== -1) {
@@ -275,15 +427,47 @@
     e.preventDefault();
     const email = document.getElementById('signupEmail').value.trim();
     const password = document.getElementById('signupPassword').value;
+    const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+    const hp = document.getElementById('signupHp').value;
     const status = document.getElementById('signupStatus');
     const btn = document.getElementById('signupSubmitBtn');
 
     status.className = 'status-msg';
     status.textContent = '';
-    btn.disabled = true;
+    clearFieldErrors_(
+      ['signupEmail', 'signupEmailError'],
+      ['signupPassword', 'signupPasswordError'],
+      ['signupPasswordConfirm', 'signupPasswordConfirmError']
+    );
 
+    if (hp) {
+      // Same honeypot logic as login — fail quietly, no network call,
+      // no hint that a hidden field was the reason.
+      status.className = 'status-msg error';
+      status.textContent = 'Could not sign up — please try again.';
+      return;
+    }
+
+    let hasError = false;
+    if (!email) { setFieldError_('signupEmail', 'signupEmailError', C.account.errorEmailRequired); hasError = true; }
+    else if (!isValidEmailClient_(email)) { setFieldError_('signupEmail', 'signupEmailError', C.account.errorEmailInvalid); hasError = true; }
+
+    if (!password) {
+      setFieldError_('signupPassword', 'signupPasswordError', C.account.errorPasswordRequired); hasError = true;
+    } else if (password.length < 8) {
+      setFieldError_('signupPassword', 'signupPasswordError', C.account.errorPasswordTooShort); hasError = true;
+    } else if (password.length > 256) {
+      setFieldError_('signupPassword', 'signupPasswordError', C.account.errorPasswordTooLong); hasError = true;
+    } else if (computeStrength_(password) === 0) {
+      setFieldError_('signupPassword', 'signupPasswordError', C.account.errorPasswordWeak); hasError = true;
+    }
+
+    if (!checkPasswordsMatch_()) hasError = true;
+    if (hasError) return;
+
+    btn.disabled = true;
     const recaptchaToken = await getRecaptchaToken_('signup');
-    const data = await callApi('signup', { email: email, password: password, recaptchaToken: recaptchaToken });
+    const data = await callApi('signup', { email: email, password: password, recaptchaToken: recaptchaToken, hp: hp });
     btn.disabled = false;
 
     if (data.ok) {
@@ -291,6 +475,9 @@
       status.innerHTML = C.account.signupSuccessNoteHtml.replace('{email}', email);
       document.getElementById('loginEmail').value = email;
       authPaneSignup.reset();
+      updatePasswordUI_('');
+      document.getElementById('ruleLen').classList.remove('met');
+      document.getElementById('ruleVariety').classList.remove('met');
     } else {
       status.className = 'status-msg error';
       status.textContent = data.error || 'Could not sign up — please try again.';

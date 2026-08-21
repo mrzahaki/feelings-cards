@@ -77,10 +77,27 @@ window.SITE_CONFIG = {
 
     emailPlaceholder: "you@example.com",
     passwordPlaceholder: "At least 8 characters",
+    confirmPasswordPlaceholder: "Type it again",
     showPasswordLabel: "Show",
     hidePasswordLabel: "Hide",
     resendLabel: "Resend verification email",
     signupSuccessNoteHtml: "Check <strong>{email}</strong> for a verification link, then come back and log in.",
+
+    // ---- client-side validation copy (account.js) — checked before any
+    // request is sent, mirrored (and actually enforced) server-side in
+    // apps-script-auth.gs. ----
+    errorEmailRequired: "Enter your email address.",
+    errorEmailInvalid: "That doesn't look like a valid email address.",
+    errorPasswordRequired: "Enter your password.",
+    errorPasswordTooShort: "Password must be at least 8 characters.",
+    errorPasswordTooLong: "Password must be under 256 characters.",
+    errorPasswordWeak: "That password is too easy to guess — try adding a few more characters or mixing in a number.",
+    errorPasswordConfirmMismatch: "Passwords don't match.",
+    errorTooManyClientAttempts: "Too many attempts — please wait {sec}s before trying again.",
+
+    pwStrengthLabels: { weak: "Weak", fair: "Fair", good: "Good", strong: "Strong" },
+    pwRuleLenText: "At least 8 characters",
+    pwRuleVarietyText: "Mix of letters, numbers, or symbols",
 
     checkoutLoggedOutNote: "Sign in first — your PDFs get delivered to your account email, and you'll be able to find them again from “My orders.”",
     checkoutSignInButtonLabel: "Sign in to check out",

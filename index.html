@@ -274,13 +274,32 @@
     <form class="auth-pane" id="authPaneLogin" novalidate>
       <h3 id="authLoginTitle"></h3>
       <p class="auth-sub" id="authLoginSub"></p>
-      <input type="email" id="loginEmail" name="email" class="email-input" autocomplete="email" required>
-      <div class="password-field">
-        <input type="password" id="loginPassword" name="current-password" class="email-input" autocomplete="current-password" required>
-        <button type="button" class="toggle-password" id="toggleLoginPassword" data-target="loginPassword" aria-label="Show password">Show</button>
+
+      <div class="field-group">
+        <input type="email" id="loginEmail" name="email" class="email-input" autocomplete="email" inputmode="email" required>
+        <p class="field-error" id="loginEmailError" aria-live="polite"></p>
       </div>
+      <div class="field-group">
+        <div class="password-field">
+          <input type="password" id="loginPassword" name="current-password" class="email-input" autocomplete="current-password" required>
+          <button type="button" class="toggle-password" id="toggleLoginPassword" data-target="loginPassword" aria-label="Show password">Show</button>
+        </div>
+        <p class="field-error" id="loginPasswordError" aria-live="polite"></p>
+      </div>
+
+      <!-- Honeypot: real visitors never see or fill this (off-screen, no
+           label, tabindex -1, autocomplete off so browsers won't
+           autofill it either). Simple scripted bots that fill every
+           input on a form trip it; account.js checks it before ever
+           calling the API, and apps-script-auth.gs checks it again
+           server-side as the real enforcement point. -->
+      <div class="hp-field" aria-hidden="true">
+        <label for="loginHp">Leave this field empty</label>
+        <input type="text" id="loginHp" name="company" tabindex="-1" autocomplete="off">
+      </div>
+
       <button type="submit" id="loginSubmitBtn" class="pay-btn"></button>
-      <p class="status-msg" id="loginStatus"></p>
+      <p class="status-msg" id="loginStatus" aria-live="polite"></p>
       <button type="button" class="auth-resend-link" id="resendVerificationBtn" hidden></button>
       <p class="auth-switch"><span id="switchToSignupText"></span> <a href="#" id="switchToSignupLink"></a></p>
     </form>
@@ -288,13 +307,48 @@
     <form class="auth-pane" id="authPaneSignup" hidden novalidate>
       <h3 id="authSignupTitle"></h3>
       <p class="auth-sub" id="authSignupSub"></p>
-      <input type="email" id="signupEmail" name="email" class="email-input" autocomplete="email" required>
-      <div class="password-field">
-        <input type="password" id="signupPassword" name="new-password" class="email-input" autocomplete="new-password" required minlength="8">
-        <button type="button" class="toggle-password" id="toggleSignupPassword" data-target="signupPassword" aria-label="Show password">Show</button>
+
+      <div class="field-group">
+        <input type="email" id="signupEmail" name="email" class="email-input" autocomplete="email" inputmode="email" required>
+        <p class="field-error" id="signupEmailError" aria-live="polite"></p>
       </div>
+
+      <div class="field-group">
+        <div class="password-field">
+          <input type="password" id="signupPassword" name="new-password" class="email-input" autocomplete="new-password" required minlength="8">
+          <button type="button" class="toggle-password" id="toggleSignupPassword" data-target="signupPassword" aria-label="Show password">Show</button>
+        </div>
+
+        <!-- Strength meter + live requirements checklist — both driven
+             by account.js on every keystroke, purely client-side UX.
+             The real enforcement (length, blocklist, rate limits) still
+             happens in apps-script-auth.gs. -->
+        <div class="pw-strength" id="signupPwStrength" hidden>
+          <div class="pw-strength-track"><div class="pw-strength-bar" id="signupPwStrengthBar"></div></div>
+          <span class="pw-strength-label" id="signupPwStrengthLabel"></span>
+        </div>
+        <ul class="pw-checklist" id="signupPwChecklist">
+          <li data-rule="len" id="ruleLen"></li>
+          <li data-rule="variety" id="ruleVariety"></li>
+        </ul>
+        <p class="field-error" id="signupPasswordError" aria-live="polite"></p>
+      </div>
+
+      <div class="field-group">
+        <div class="password-field">
+          <input type="password" id="signupPasswordConfirm" name="new-password-confirm" class="email-input" autocomplete="new-password" required>
+          <button type="button" class="toggle-password" id="toggleSignupPasswordConfirm" data-target="signupPasswordConfirm" aria-label="Show password">Show</button>
+        </div>
+        <p class="field-error" id="signupPasswordConfirmError" aria-live="polite"></p>
+      </div>
+
+      <div class="hp-field" aria-hidden="true">
+        <label for="signupHp">Leave this field empty</label>
+        <input type="text" id="signupHp" name="company" tabindex="-1" autocomplete="off">
+      </div>
+
       <button type="submit" id="signupSubmitBtn" class="pay-btn"></button>
-      <p class="status-msg" id="signupStatus"></p>
+      <p class="status-msg" id="signupStatus" aria-live="polite"></p>
       <p class="auth-switch"><span id="switchToLoginText"></span> <a href="#" id="switchToLoginLink"></a></p>
     </form>
 

@@ -500,10 +500,76 @@
     margin-bottom:14px;
     background:#fff;
     color:var(--ink);
+    transition:border-color .15s ease, box-shadow .15s ease;
   }
   .email-input:focus{outline:3px solid var(--sky); outline-offset:2px;}
   .password-field{position:relative;}
   .password-field .email-input{padding-right:64px; margin-bottom:14px;}
+
+  /* ---------- modern auth form additions: field groups, inline errors,
+     honeypot, password strength meter + live requirements checklist ---------- */
+  .field-group{margin-bottom:2px;}
+  .email-input.invalid{border-color:#B3492E; box-shadow:0 0 0 3px rgba(179,73,46,.12);}
+  .field-error{
+    font-size:.8rem; color:#B3492E; font-weight:600;
+    margin:-9px 0 12px 2px; min-height:0;
+  }
+  .field-error:empty{display:none;}
+  @keyframes field-shake{
+    10%,90%{transform:translateX(-1px);}
+    20%,80%{transform:translateX(2px);}
+    30%,50%,70%{transform:translateX(-4px);}
+    40%,60%{transform:translateX(4px);}
+  }
+  .shake{animation:field-shake .4s ease;}
+
+  /* Off-screen, not display:none/visibility:hidden — some bots skip
+     fields that are trivially hidden that way, so this stays technically
+     visible to a naive DOM scan but is unreachable and invisible for any
+     real visitor (moved off-canvas, zero size, not tab-focusable). */
+  .hp-field{
+    position:absolute; width:1px; height:1px;
+    overflow:hidden; clip:rect(0,0,0,0);
+    left:-9999px;
+  }
+
+  .pw-strength{margin:2px 0 8px;}
+  .pw-strength-track{
+    width:100%; height:6px; border-radius:100px;
+    background:var(--line); overflow:hidden;
+  }
+  .pw-strength-bar{
+    height:100%; width:0; border-radius:100px;
+    transition:width .2s ease, background-color .2s ease;
+    background:#B3492E;
+  }
+  .pw-strength-bar.tier-weak{background:#B3492E;}
+  .pw-strength-bar.tier-fair{background:var(--tan);}
+  .pw-strength-bar.tier-good{background:var(--sage);}
+  .pw-strength-bar.tier-strong{background:#5B9A6F;}
+  .pw-strength-label{
+    display:block; font-size:.76rem; font-weight:700;
+    color:var(--ink-soft); margin-top:4px;
+  }
+
+  .pw-checklist{list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:4px;}
+  .pw-checklist li{
+    font-size:.8rem; color:var(--ink-soft);
+    display:flex; align-items:center; gap:7px;
+    transition:color .15s ease;
+  }
+  .pw-checklist li::before{
+    content:'';
+    flex:0 0 auto; width:15px; height:15px; border-radius:50%;
+    border:1.5px solid var(--line);
+    background:#fff;
+    transition:background-color .15s ease, border-color .15s ease;
+  }
+  .pw-checklist li.met{color:var(--brown-deep); font-weight:600;}
+  .pw-checklist li.met::before{
+    background:var(--sage) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center/60% no-repeat;
+    border-color:var(--sage);
+  }
   .toggle-password{
     position:absolute; top:0; right:2px; height:100%;
     display:flex; align-items:center;
