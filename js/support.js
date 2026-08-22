@@ -34,6 +34,9 @@
   const backdrop = document.getElementById('supportBackdrop');
   const panel = document.getElementById('supportPanel');
   const closeBtn = document.getElementById('supportClose');
+  const maximizeBtn = document.getElementById('supportMaximize');
+  const resizeHandle = document.getElementById('supportResizeHandle');
+  const grabber = document.getElementById('supportGrabber');
   const messagesEl = document.getElementById('supportMessages');
   const scrollLatestBtn = document.getElementById('supportScrollLatest');
   const quickRepliesEl = document.getElementById('supportQuickReplies');
@@ -46,6 +49,9 @@
   const fileInput = document.getElementById('supportFileInput');
   const attachPreview = document.getElementById('supportAttachPreview');
   const attachPreviewImg = document.getElementById('supportAttachPreviewImg');
+  const attachPreviewVideo = document.getElementById('supportAttachPreviewVideo');
+  const attachFileChip = document.getElementById('supportAttachFileChip');
+  const attachFileName = document.getElementById('supportAttachFileName');
   const attachRemoveBtn = document.getElementById('supportAttachRemove');
   const dropHint = document.getElementById('supportDropHint');
   const emojiBtn = document.getElementById('supportEmojiBtn');
@@ -65,11 +71,14 @@
   let isOpen = false;
   let sending = false;
 
-  // ---- staged image attachment (paste / drag-drop / file picker) ----
-  // { blob, mimeType, previewUrl } or null. Only ever holds ONE image at
-  // a time (kept simple), and only exists client-side until send —
-  // support.js never persists it, and the server never persists it
-  // either (see apps-script-support.gs's constants block).
+  // ---- staged attachment (paste / drag-drop / file picker) ----
+  // { blob, mimeType, previewUrl, kind, fileName } or null, where kind is
+  // 'image' | 'video' | 'file'. previewUrl is only set for image/video
+  // (an object URL the browser can render directly); a generic file just
+  // shows its name. Only ever holds ONE attachment at a time (kept
+  // simple), and only exists client-side until send — support.js never
+  // persists it, and the server never persists it either (see
+  // apps-script-support.gs's constants block).
   let pendingAttachment = null;
 
   // ---- polling ----
@@ -243,18 +252,38 @@
     wrap.className = 'support-msg ' + (m.sender === 'user' ? 'support-msg-user' : 'support-msg-support') + (grouped ? ' support-msg-grouped' : '');
     if (String(m.id).indexOf('pending-') === 0) wrap.classList.add('support-msg-pending');
 
-    // imageUrl only ever exists in this tab's own memory (an object URL
-    // over the buyer's own compressed blob) — the server never sends
-    // image bytes back, so a message loaded fresh from poll/history
-    // (e.g. after a refresh) has no imageUrl and just shows its stored
-    // text placeholder instead. See apps-script-support.gs's constants
-    // block for why images aren't persisted server-side.
-    if (m.imageUrl) {
+    // attachmentUrl/attachmentKind only ever exist in this tab's own
+    // memory (an object URL over the buyer's own blob) — the server
+    // never sends attachment bytes back, so a message loaded fresh from
+    // poll/history (e.g. after a refresh) has neither and just shows its
+    // stored text placeholder instead. See apps-script-support.gs's
+    // constants block for why attachments aren't persisted server-side.
+    if (m.attachmentKind === 'image' && m.attachmentUrl) {
       const imgEl = document.createElement('img');
       imgEl.className = 'support-msg-img';
-      imgEl.src = m.imageUrl;
+      imgEl.src = m.attachmentUrl;
       imgEl.alt = 'Image attached to message';
       wrap.appendChild(imgEl);
+    } else if (m.attachmentKind === 'video' && m.attachmentUrl) {
+      const videoEl = document.createElement('video');
+      videoEl.className = 'support-msg-video';
+      videoEl.src = m.attachmentUrl;
+      videoEl.controls = true;
+      videoEl.setAttribute('aria-label', 'Video attached to message');
+      wrap.appendChild(videoEl);
+    } else if (m.attachmentKind === 'file' && m.attachmentName) {
+      const chip = document.createElement('span');
+      chip.className = 'support-msg-file-chip';
+      const icon = document.createElement('span');
+      icon.className = 'support-attach-file-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '📎';
+      const name = document.createElement('span');
+      name.className = 'support-attach-file-name';
+      name.textContent = m.attachmentName;
+      chip.appendChild(icon);
+      chip.appendChild(name);
+      wrap.appendChild(chip);
     }
 
     if (m.text) {
@@ -322,6 +351,7 @@
     panel.hidden = false;
     panel.setAttribute('aria-hidden', 'false');
     launcher.setAttribute('aria-expanded', 'true');
+    applyStoredSize_();
     if (MOBILE_QUERY && MOBILE_QUERY.matches) {
       backdrop.hidden = false;
       document.body.classList.add('support-scroll-lock');
@@ -358,6 +388,223 @@
     if (e.key === 'Escape' && isOpen) closePanel();
   });
 
+  // ---- resize ----
+  // Lets a buyer make the panel bigger for a broader view of the
+  // conversation — a corner drag handle on desktop/tablet (resizes width
+  // + height), a draggable grabber on mobile (resizes the sheet's
+  // height), plus a one-tap "maximize" toggle for anyone who'd rather
+  // not fiddle with a drag. All three work with mouse, touch, or pen
+  // (Pointer Events), and the drag handles are keyboard-operable too.
+  //
+  // Only the panel's on-screen SIZE is ever remembered, and only for
+  // this tab (sessionStorage) — never anything about the conversation
+  // itself, consistent with this file's no-persistence rule (see file
+  // header). If storage is unavailable (private browsing, etc.) sizing
+  // just quietly stops persisting; nothing breaks.
+  const SIZE_KEY = 'ff_support_panel_size';
+  function readSizePref_() {
+    try { return JSON.parse(sessionStorage.getItem(SIZE_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function writeSizePref_(patch) {
+    try { sessionStorage.setItem(SIZE_KEY, JSON.stringify(Object.assign(readSizePref_(), patch))); } catch (e) { /* ignore */ }
+  }
+  function clamp_(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  const DESKTOP_MIN_W = 340, DESKTOP_MIN_H = 420;
+  const MOBILE_MIN_H = 320;
+  function desktopMaxW() { return Math.min(920, window.innerWidth - 24); }
+  function desktopMaxH() { return Math.min(920, window.innerHeight - 40); }
+  function mobileMaxH() { return window.innerHeight * .96; }
+
+  let isMaximized = false;
+  function setMaximized_(on, opts) {
+    opts = opts || {};
+    isMaximized = on;
+    panel.classList.toggle('is-maximized', on);
+    if (maximizeBtn) {
+      maximizeBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      maximizeBtn.setAttribute('aria-label', on ? 'Restore chat window size' : 'Expand chat window');
+      const iconExpand = maximizeBtn.querySelector('.support-maximize-icon-expand');
+      const iconCollapse = maximizeBtn.querySelector('.support-maximize-icon-collapse');
+      if (iconExpand) iconExpand.hidden = on;
+      if (iconCollapse) iconCollapse.hidden = !on;
+    }
+    if (!opts.skipStorage) writeSizePref_({ maximized: on });
+  }
+  if (maximizeBtn) {
+    maximizeBtn.addEventListener('click', () => setMaximized_(!isMaximized));
+  }
+
+  // Applied every time the panel opens: restores whatever size (or
+  // maximized state) this tab last left it at, re-clamped to the
+  // CURRENT viewport in case the window/orientation changed meanwhile.
+  function applyStoredSize_() {
+    const pref = readSizePref_();
+    if (MOBILE_QUERY && MOBILE_QUERY.matches) {
+      if (pref.mobileH) panel.style.height = clamp_(pref.mobileH, MOBILE_MIN_H, mobileMaxH()) + 'px';
+    } else if (pref.maximized) {
+      setMaximized_(true, { skipStorage: true });
+    } else if (pref.w && pref.h) {
+      panel.style.maxWidth = 'none';
+      panel.style.maxHeight = 'none';
+      panel.style.width = clamp_(pref.w, DESKTOP_MIN_W, desktopMaxW()) + 'px';
+      panel.style.height = clamp_(pref.h, DESKTOP_MIN_H, desktopMaxH()) + 'px';
+    }
+  }
+
+  function resetSize_() {
+    panel.style.width = '';
+    panel.style.height = '';
+    panel.style.maxWidth = '';
+    panel.style.maxHeight = '';
+    if (isMaximized) setMaximized_(false, { skipStorage: true });
+    writeSizePref_({ w: null, h: null, mobileH: null, maximized: false });
+  }
+
+  // Corner handle (desktop/tablet): drag grows the panel toward the
+  // top-left, since it's pinned bottom-right on screen.
+  if (resizeHandle) {
+    let dragging = false, startX = 0, startY = 0, startW = 0, startH = 0;
+
+    resizeHandle.addEventListener('pointerdown', e => {
+      if (MOBILE_QUERY && MOBILE_QUERY.matches) return; // hidden on mobile anyway, but just in case
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      const rect = panel.getBoundingClientRect();
+      startW = rect.width; startH = rect.height;
+      panel.style.maxWidth = 'none';
+      panel.style.maxHeight = 'none';
+      // Pin to the current visual size BEFORE dropping the maximized
+      // class, so exiting maximize mid-drag can't flash back to the
+      // (smaller) default size for a frame.
+      panel.style.width = startW + 'px';
+      panel.style.height = startH + 'px';
+      if (isMaximized) setMaximized_(false, { skipStorage: true });
+      panel.classList.add('is-resizing');
+      document.body.classList.add('support-resizing');
+      resizeHandle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    resizeHandle.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const w = clamp_(startW + (startX - e.clientX), DESKTOP_MIN_W, desktopMaxW());
+      const h = clamp_(startH + (startY - e.clientY), DESKTOP_MIN_H, desktopMaxH());
+      panel.style.width = w + 'px';
+      panel.style.height = h + 'px';
+    });
+    function endResizeDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      panel.classList.remove('is-resizing');
+      document.body.classList.remove('support-resizing');
+      const rect = panel.getBoundingClientRect();
+      writeSizePref_({ w: Math.round(rect.width), h: Math.round(rect.height), maximized: false });
+      if (e && e.pointerId != null && resizeHandle.hasPointerCapture && resizeHandle.hasPointerCapture(e.pointerId)) {
+        resizeHandle.releasePointerCapture(e.pointerId);
+      }
+    }
+    resizeHandle.addEventListener('pointerup', endResizeDrag);
+    resizeHandle.addEventListener('pointercancel', endResizeDrag);
+    resizeHandle.addEventListener('dblclick', resetSize_);
+
+    // Keyboard fallback: arrow keys nudge width/height, Enter/Space
+    // toggles maximize, matching what the visible icon button does.
+    resizeHandle.addEventListener('keydown', e => {
+      if (MOBILE_QUERY && MOBILE_QUERY.matches) return;
+      const STEP = 24;
+      const rect = panel.getBoundingClientRect();
+      let w = rect.width, h = rect.height, changed = true;
+      if (e.key === 'ArrowLeft') w += STEP;
+      else if (e.key === 'ArrowRight') w -= STEP;
+      else if (e.key === 'ArrowUp') h += STEP;
+      else if (e.key === 'ArrowDown') h -= STEP;
+      else if (e.key === 'Enter' || e.key === ' ') { setMaximized_(!isMaximized); changed = false; }
+      else { changed = false; }
+      if (!changed) return;
+      e.preventDefault();
+      if (isMaximized) setMaximized_(false, { skipStorage: true });
+      w = clamp_(w, DESKTOP_MIN_W, desktopMaxW());
+      h = clamp_(h, DESKTOP_MIN_H, desktopMaxH());
+      panel.style.maxWidth = 'none';
+      panel.style.maxHeight = 'none';
+      panel.style.width = w + 'px';
+      panel.style.height = h + 'px';
+      writeSizePref_({ w: Math.round(w), h: Math.round(h), maximized: false });
+    });
+  }
+
+  // Grabber (mobile): drag adjusts the sheet's height; dragging it down
+  // past a threshold dismisses the panel instead of leaving a sliver,
+  // matching the familiar bottom-sheet "swipe to close" gesture.
+  if (grabber) {
+    let dragging = false, startY = 0, startH = 0;
+
+    grabber.addEventListener('pointerdown', e => {
+      if (!(MOBILE_QUERY && MOBILE_QUERY.matches)) return;
+      dragging = true;
+      startY = e.clientY;
+      startH = panel.getBoundingClientRect().height;
+      panel.classList.add('is-resizing');
+      document.body.classList.add('support-resizing-y');
+      grabber.setPointerCapture(e.pointerId);
+    });
+    grabber.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const h = startH + (startY - e.clientY);
+      panel.style.height = clamp_(h, 140, mobileMaxH()) + 'px'; // allowed to go small here so the close-threshold check below can see it
+    });
+    function endGrabberDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      panel.classList.remove('is-resizing');
+      document.body.classList.remove('support-resizing-y');
+      const h = panel.getBoundingClientRect().height;
+      if (h < MOBILE_MIN_H * 0.55) {
+        panel.style.height = '';
+        closePanel();
+      } else {
+        const clamped = clamp_(h, MOBILE_MIN_H, mobileMaxH());
+        panel.style.height = clamped + 'px';
+        writeSizePref_({ mobileH: Math.round(clamped) });
+      }
+      if (e && e.pointerId != null && grabber.hasPointerCapture && grabber.hasPointerCapture(e.pointerId)) {
+        grabber.releasePointerCapture(e.pointerId);
+      }
+    }
+    grabber.addEventListener('pointerup', endGrabberDrag);
+    grabber.addEventListener('pointercancel', endGrabberDrag);
+    grabber.addEventListener('dblclick', resetSize_);
+
+    grabber.addEventListener('keydown', e => {
+      if (!(MOBILE_QUERY && MOBILE_QUERY.matches)) return;
+      const STEP = 32;
+      let h = panel.getBoundingClientRect().height, changed = true;
+      if (e.key === 'ArrowUp') h += STEP;
+      else if (e.key === 'ArrowDown') h -= STEP;
+      else if (e.key === 'Home') h = MOBILE_MIN_H;
+      else if (e.key === 'End') h = mobileMaxH();
+      else { changed = false; }
+      if (!changed) return;
+      e.preventDefault();
+      h = clamp_(h, MOBILE_MIN_H, mobileMaxH());
+      panel.style.height = h + 'px';
+      writeSizePref_({ mobileH: Math.round(h) });
+    });
+  }
+
+  // Keep the panel from getting stranded off-screen (or absurdly large)
+  // if the window is resized, or the phone rotates, while it's open.
+  window.addEventListener('resize', () => {
+    if (!isOpen) return;
+    if (MOBILE_QUERY && MOBILE_QUERY.matches) {
+      if (panel.style.height) panel.style.height = clamp_(parseFloat(panel.style.height), MOBILE_MIN_H, mobileMaxH()) + 'px';
+    } else {
+      if (isMaximized) return; // the .is-maximized CSS rule already tracks the viewport on its own
+      if (panel.style.width) panel.style.width = clamp_(parseFloat(panel.style.width), DESKTOP_MIN_W, desktopMaxW()) + 'px';
+      if (panel.style.height) panel.style.height = clamp_(parseFloat(panel.style.height), DESKTOP_MIN_H, desktopMaxH()) + 'px';
+    }
+  });
+
   // opts.markRead (bool): piggyback "mark read up to now" onto this same
   // request instead of firing a second call — pass true only when the
   // buyer is actually opening the panel (see openPanel), never on a
@@ -382,10 +629,33 @@
     } catch (err) { /* keep whatever's already rendered; next poll will retry */ }
   }
 
-  // ---- image attachment: staging, validation, client-side compression ----
-  const ATTACH_MAX_BYTES = C.support.attachMaxBytes || 3500000;
+  // ---- attachment: staging, validation, client-side image compression ----
+  // Three categories, each with its own size cap — kept in sync with
+  // apps-script-support.gs's ALLOWED_*_MIME_TYPES / MAX_*_BYTES. Images
+  // get compressed client-side (see compressImage_); videos and
+  // documents can't be shrunk in the browser, so they're just checked
+  // against their cap directly and rejected if over.
+  const ATTACH_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  const ATTACH_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+  const ATTACH_DOC_TYPES = [
+    'application/pdf', 'text/plain', 'text/csv',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ];
+  const ATTACH_ALLOWED_TYPES = ATTACH_IMAGE_TYPES.concat(ATTACH_VIDEO_TYPES, ATTACH_DOC_TYPES);
+
+  const ATTACH_MAX_BYTES_IMAGE = C.support.attachMaxBytesImage || 3500000;
+  const ATTACH_MAX_BYTES_VIDEO = C.support.attachMaxBytesVideo || 15000000;
+  const ATTACH_MAX_BYTES_DOC = C.support.attachMaxBytesDoc || 8000000;
   const ATTACH_MAX_DIMENSION = C.support.attachMaxDimension || 1440;
-  const ATTACH_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // keep in sync with apps-script-support.gs's ALLOWED_IMAGE_MIME_TYPES
+
+  function categoryForType_(mimeType) {
+    if (ATTACH_IMAGE_TYPES.indexOf(mimeType) !== -1) return 'image';
+    if (ATTACH_VIDEO_TYPES.indexOf(mimeType) !== -1) return 'video';
+    if (ATTACH_DOC_TYPES.indexOf(mimeType) !== -1) return 'file';
+    return null;
+  }
 
   attachBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => {
@@ -393,12 +663,15 @@
     fileInput.value = ''; // so picking the exact same file twice still fires 'change'
   });
 
-  // Paste an image directly into the message box.
+  // Paste an image directly into the message box. Only images (not
+  // video/documents) are wired up for paste — that's the one clipboard
+  // interaction browsers actually support well, and it matches what
+  // people expect from pasting a screenshot.
   input.addEventListener('paste', e => {
     const items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
-      if (items[i].kind === 'file' && ATTACH_ALLOWED_TYPES.indexOf(items[i].type) !== -1) {
+      if (items[i].kind === 'file' && ATTACH_IMAGE_TYPES.indexOf(items[i].type) !== -1) {
         e.preventDefault(); // don't also drop garbage image bytes into the text
         stageFile_(items[i].getAsFile());
         return;
@@ -437,27 +710,45 @@
 
   function stageFile_(file) {
     if (!file) return;
-    if (ATTACH_ALLOWED_TYPES.indexOf(file.type) === -1) {
+    const category = categoryForType_(file.type);
+    if (!category) {
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = C.support.errorAttachType;
       return;
     }
-    // Sanity cap on the ORIGINAL file before we even try to decode/draw
-    // it — an absurdly large source image (e.g. a 100MP photo) is still
-    // expensive to load into a canvas even though the compressed OUTPUT
-    // would be small. 25MB is generous for any real phone/camera photo.
-    if (file.size > 25 * 1024 * 1024) {
+
+    if (category === 'image') {
+      // Sanity cap on the ORIGINAL file before we even try to decode/draw
+      // it — an absurdly large source image (e.g. a 100MP photo) is still
+      // expensive to load into a canvas even though the compressed OUTPUT
+      // would be small. 25MB is generous for any real phone/camera photo.
+      if (file.size > 25 * 1024 * 1024) {
+        statusEl.className = 'status-msg support-status error';
+        statusEl.textContent = C.support.errorAttachTooLarge;
+        return;
+      }
+      statusEl.textContent = '';
+      compressImage_(file)
+        .then(result => setAttachment_(result.blob, result.mimeType, 'image', file.name))
+        .catch(() => {
+          statusEl.className = 'status-msg support-status error';
+          statusEl.textContent = C.support.errorAttachGeneric;
+        });
+      return;
+    }
+
+    // Video and documents can't be shrunk client-side the way images
+    // can, so they're just checked directly against their category's cap
+    // and either staged as-is or rejected — nothing about the file is
+    // read, decoded, or transformed until the buyer actually hits send.
+    const maxBytes = category === 'video' ? ATTACH_MAX_BYTES_VIDEO : ATTACH_MAX_BYTES_DOC;
+    if (file.size > maxBytes) {
       statusEl.className = 'status-msg support-status error';
-      statusEl.textContent = C.support.errorAttachTooLarge;
+      statusEl.textContent = category === 'video' ? C.support.errorAttachTooLargeVideo : C.support.errorAttachTooLargeDoc;
       return;
     }
     statusEl.textContent = '';
-    compressImage_(file)
-      .then(result => setAttachment_(result.blob, result.mimeType))
-      .catch(() => {
-        statusEl.className = 'status-msg support-status error';
-        statusEl.textContent = C.support.errorAttachGeneric;
-      });
+    setAttachment_(file, file.type, category, file.name);
   }
 
   // Resizes to ATTACH_MAX_DIMENSION on the longest side and re-encodes as
@@ -501,20 +792,42 @@
     });
   }
 
-  function setAttachment_(blob, mimeType) {
+  function setAttachment_(blob, mimeType, kind, fileName) {
     clearAttachment_(); // revoke any previous preview URL first
-    const previewUrl = URL.createObjectURL(blob);
-    pendingAttachment = { blob, mimeType, previewUrl };
-    attachPreviewImg.src = previewUrl;
+    // Only image/video are things a browser can render straight from an
+    // object URL; a generic document just shows its name instead.
+    const previewUrl = (kind === 'image' || kind === 'video') ? URL.createObjectURL(blob) : null;
+    pendingAttachment = { blob, mimeType, previewUrl, kind, fileName: fileName || 'attachment' };
+
+    attachPreviewImg.hidden = true;
+    attachPreviewVideo.hidden = true;
+    attachFileChip.hidden = true;
+
+    if (kind === 'image') {
+      attachPreviewImg.src = previewUrl;
+      attachPreviewImg.hidden = false;
+    } else if (kind === 'video') {
+      attachPreviewVideo.src = previewUrl;
+      attachPreviewVideo.hidden = false;
+    } else {
+      attachFileName.textContent = pendingAttachment.fileName;
+      attachFileChip.hidden = false;
+    }
+
     attachPreview.hidden = false;
     input.focus();
   }
 
   function clearAttachment_() {
-    if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+    if (pendingAttachment && pendingAttachment.previewUrl) URL.revokeObjectURL(pendingAttachment.previewUrl);
     pendingAttachment = null;
     attachPreview.hidden = true;
+    attachPreviewImg.hidden = true;
     attachPreviewImg.src = '';
+    attachPreviewVideo.hidden = true;
+    attachPreviewVideo.src = '';
+    attachFileChip.hidden = true;
+    attachFileName.textContent = '';
   }
 
   attachRemoveBtn.addEventListener('click', clearAttachment_);
@@ -635,32 +948,35 @@
 
     // Optimistic append so sending feels instant; if the request turns
     // out to have failed, that optimistic bubble is removed again below.
-    // imageUrl here is the buyer's own compressed blob, shown purely
-    // client-side — the server never echoes image bytes back (see
-    // apps-script-support.gs), so this is the only place this preview
-    // ever comes from, including for the bubble that stays on screen
-    // after a successful send.
+    // attachmentUrl here is the buyer's own blob (compressed, for
+    // images), shown purely client-side — the server never echoes
+    // attachment bytes back (see apps-script-support.gs), so this is the
+    // only place this preview ever comes from, including for the bubble
+    // that stays on screen after a successful send. Documents have no
+    // previewUrl (nothing to render inline), so they just carry a name.
     const optimistic = {
       id: 'pending-' + Date.now(),
       sender: 'user',
       text: text,
       createdAt: new Date().toISOString(),
-      imageUrl: attachment ? attachment.previewUrl : null
+      attachmentKind: attachment ? attachment.kind : null,
+      attachmentUrl: attachment ? attachment.previewUrl : null,
+      attachmentName: attachment ? attachment.fileName : null
     };
     messages.push(optimistic);
     renderMessages_();
     input.value = '';
     autoGrow_();
     updateCharCount_();
-    if (attachment) { pendingAttachment = null; attachPreview.hidden = true; attachPreviewImg.src = ''; } // detach without revoking — optimistic bubble owns the URL now
+    if (attachment) { pendingAttachment = null; attachPreview.hidden = true; attachPreviewImg.src = ''; attachPreviewVideo.src = ''; } // detach without revoking — optimistic bubble owns the URL now
 
     let payload = { text: text };
     if (attachment) {
       try {
         const base64 = await blobToBase64_(attachment.blob);
-        payload.image = { data: base64, mimeType: attachment.mimeType };
+        payload.attachment = { data: base64, mimeType: attachment.mimeType, fileName: attachment.fileName };
       } catch (err) {
-        URL.revokeObjectURL(attachment.previewUrl);
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
         messages = messages.filter(m => m !== optimistic);
         renderMessages_();
         sending = false;
@@ -684,9 +1000,13 @@
     if (data.ok && data.message) {
       const idx = messages.indexOf(optimistic);
       if (idx !== -1) messages.splice(idx, 1); // drop the optimistic placeholder
-      // Carry the local image preview over onto the server's message
-      // record — the server itself never returns image bytes.
-      if (attachment) data.message.imageUrl = optimistic.imageUrl;
+      // Carry the local attachment preview over onto the server's message
+      // record — the server itself never returns attachment bytes.
+      if (attachment) {
+        data.message.attachmentKind = optimistic.attachmentKind;
+        data.message.attachmentUrl = optimistic.attachmentUrl;
+        data.message.attachmentName = optimistic.attachmentName;
+      }
       // If a background poll already pulled in this exact message (same
       // id) while this request was in flight, don't add a second copy.
       if (!messages.some(m => m.id === data.message.id)) {
@@ -697,13 +1017,13 @@
       lastReadAt = lastSeen; // it's the buyer's own message — obviously already "read"
       renderMessages_();
     } else {
-      if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+      if (attachment && attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
       messages = messages.filter(m => m !== optimistic);
       renderMessages_();
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = data.error || C.support.errorGeneric;
       input.value = text; // hand the text back so nothing typed is lost
-      if (attachment) setAttachment_(attachment.blob, attachment.mimeType); // give the image back too
+      if (attachment) setAttachment_(attachment.blob, attachment.mimeType, attachment.kind, attachment.fileName); // give the attachment back too
       autoGrow_();
       updateCharCount_();
     }
@@ -738,7 +1058,7 @@
     statusEl.textContent = '';
     input.value = '';
     charCountEl.hidden = true;
-    clearAttachment_(); // don't carry a staged image over to whoever logs in next on a shared computer
+    clearAttachment_(); // don't carry a staged attachment over to whoever logs in next on a shared computer
     if (emojiBtn) closeEmoji_();
     clearTimeout(pollTimer);
   }

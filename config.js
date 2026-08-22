@@ -311,22 +311,29 @@ window.SITE_CONFIG = {
     errorTooLong: "That message is too long.",
     charLimit: 3000,
 
-    // ---- image attachments (paste or drag-and-drop into the chat) ----
-    // maxBytes is enforced client-side AFTER the browser-side compression
-    // step (see support.js) — it's a final safety cap, not the size a
-    // buyer's original screenshot needs to already be under. Must stay
-    // <= MAX_IMAGE_BYTES in apps-script-support.gs, or a compressed image
-    // that passes here could still get rejected server-side.
-    attachMaxBytes: 3500000,
-    attachMaxDimension: 1440, // longest side, in px, after client-side resize
-    attachAllowedLabel: "JPG, PNG, or WebP",
-    attachLabel: "Attach image",
-    attachAriaLabel: "Attach an image",
-    attachRemoveLabel: "Remove attached image",
-    attachDropHint: "Drop image to attach",
-    errorAttachType: "Please attach a JPG, PNG, or WebP image.",
+    // ---- attachments (paste or drag-and-drop into the chat) ----
+    // Images: attachMaxBytesImage is enforced client-side AFTER the
+    // browser-side compression step (see support.js) — it's a final
+    // safety cap, not the size a buyer's original screenshot needs to
+    // already be under. Videos and documents can't be shrunk in the
+    // browser, so their caps are checked directly against the original
+    // file. All three caps must stay <= their matching MAX_*_BYTES in
+    // apps-script-support.gs, or a file that passes here could still get
+    // rejected server-side.
+    attachMaxBytesImage: 3500000,
+    attachMaxBytesVideo: 15000000,
+    attachMaxBytesDoc: 8000000,
+    attachMaxDimension: 1440, // longest side, in px, after client-side resize (images only)
+    attachAllowedLabel: "Images, short videos, or PDF/Word/Excel/PowerPoint/text files",
+    attachLabel: "Attach a file",
+    attachAriaLabel: "Attach a file",
+    attachRemoveLabel: "Remove attachment",
+    attachDropHint: "Drop file to attach",
+    errorAttachType: "That file type isn't supported. Please attach a JPG/PNG/WebP/GIF image, an MP4/WebM/MOV video, or a PDF/Word/Excel/PowerPoint/text file.",
     errorAttachTooLarge: "That image is too large — try a smaller one or a screenshot instead of the original photo.",
-    errorAttachGeneric: "Couldn't attach that image — please try again.",
+    errorAttachTooLargeVideo: "That video is too large for chat (max ~15MB) — try a shorter clip or a lower resolution export.",
+    errorAttachTooLargeDoc: "That file is too large for chat (max ~8MB).",
+    errorAttachGeneric: "Couldn't attach that file — please try again.",
 
     // ---- emoji picker ----
     emojiLabel: "Add an emoji",

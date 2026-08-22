@@ -1309,7 +1309,41 @@
   }
   .support-panel-grabber{display:none;}
 
+  /* ---- resize (desktop/tablet corner grip) ----
+     Sits at the panel's top-left corner (where it grows from, since the
+     panel is pinned to the bottom-right of the screen). Only shown above
+     the mobile breakpoint — below it, resizing width makes no sense on a
+     full-width sheet, so the grabber further down handles height instead. */
+  .support-resize-handle{
+    position:absolute; top:0; left:0; z-index:5;
+    width:28px; height:28px; padding:6px;
+    display:flex; align-items:flex-start; justify-content:flex-start;
+    color:var(--ink-soft);
+    cursor:nwse-resize; touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    border-radius:10px 0 10px 0;
+  }
+  .support-resize-handle svg{width:15px; height:15px; opacity:.75; transition:opacity .15s ease, color .15s ease;}
+  .support-resize-handle:focus-visible{outline:3px solid var(--brown); outline-offset:-2px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-resize-handle:hover{color:var(--brown-deep);}
+    .support-resize-handle:hover svg{opacity:1;}
+  }
+  .support-resize-handle:active svg,
+  .support-panel.is-resizing .support-resize-handle svg{opacity:1;}
+  .support-panel.is-resizing{transition:none !important; animation:none !important;}
+  .support-panel.is-maximized{
+    width:min(760px, calc(100vw - 28px)) !important;
+    height:min(86vh, 880px) !important;
+    max-width:none !important; max-height:none !important;
+  }
+  body.support-resizing,
+  body.support-resizing *{cursor:nwse-resize !important; user-select:none !important; -webkit-user-select:none !important;}
+  body.support-resizing-y,
+  body.support-resizing-y *{cursor:ns-resize !important; user-select:none !important; -webkit-user-select:none !important;}
+
   @media (max-width:640px){
+    .support-resize-handle{display:none;}
     .support-panel{
       right:0; left:0; bottom:0; top:auto;
       width:100%;
@@ -1323,9 +1357,15 @@
       from{transform:translateY(100%);} to{transform:translateY(0);}
     }
     .support-panel-grabber{
-      display:flex; justify-content:center; padding:10px 0 2px; flex:none;
+      display:flex; justify-content:center; padding:14px 0 6px; flex:none;
+      cursor:ns-resize; touch-action:none; -webkit-tap-highlight-color:transparent;
     }
-    .support-panel-grabber span{width:36px; height:4px; border-radius:100px; background:var(--line);}
+    .support-panel-grabber span{width:36px; height:4px; border-radius:100px; background:var(--line); transition:background .15s ease, width .15s ease;}
+    .support-panel-grabber:focus-visible{outline:none;}
+    .support-panel-grabber:focus-visible span{outline:3px solid var(--brown); outline-offset:3px; border-radius:100px;}
+    .support-panel-grabber:active span,
+    .support-panel.is-resizing .support-panel-grabber span{background:var(--brown); width:44px;}
+    .support-panel.is-maximized{width:100% !important; height:min(86vh,720px) !important;} /* the maximize button is desktop-only (see JS); ignore it on mobile */
   }
   @media (prefers-reduced-motion: reduce){
     .support-panel{animation:none;}
@@ -1338,6 +1378,7 @@
     border-bottom:1px solid var(--line);
   }
   .support-panel-heading{display:flex; align-items:center; gap:11px; min-width:0;}
+  .support-panel-header-actions{display:flex; align-items:center; gap:2px; flex:none;}
   .support-avatar{
     position:relative; flex:none;
     width:38px; height:38px; border-radius:50%;
@@ -1363,6 +1404,25 @@
   .support-close svg{width:16px; height:16px;}
   .support-close:hover{background:var(--line); color:var(--ink);}
   .support-close:active{transform:scale(.92);}
+
+  /* Maximize toggle: same shape/behavior as the close button, desktop
+     only (a fixed "maximized" size is redundant on a mobile sheet the
+     buyer can already drag open via the grabber). */
+  .support-maximize{
+    flex:none; width:36px; height:36px; border-radius:50%;
+    background:var(--bg); color:var(--ink-soft); border:none;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .12s ease, color .12s ease;
+  }
+  .support-maximize svg{width:16px; height:16px;}
+  .support-maximize:hover{background:var(--line); color:var(--ink);}
+  .support-maximize:active{transform:scale(.92);}
+  .support-maximize[aria-pressed="true"]{background:var(--brown); color:#fff;}
+  .support-maximize[aria-pressed="true"]:hover{background:var(--brown-deep);}
+  @media (max-width:640px){
+    .support-maximize{display:none;}
+  }
 
   /* ---- messages ---- */
   .support-messages-wrap{position:relative; flex:1; min-height:0; display:flex;}
@@ -1405,11 +1465,27 @@
     from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}
   }
   .support-msg-text{display:block; white-space:pre-wrap; word-break:break-word;}
-  .support-msg-img{
+  .support-msg-img,
+  .support-msg-video{
     display:block; max-width:100%; max-height:220px;
     border-radius:10px; object-fit:cover;
   }
-  .support-msg-img + .support-msg-text{margin-top:6px;}
+  .support-msg-img + .support-msg-text,
+  .support-msg-video + .support-msg-text,
+  .support-msg-file-chip + .support-msg-text{margin-top:6px;}
+  .support-msg-file-chip{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:10px;
+    background:rgba(0,0,0,.06);
+  }
+  .support-msg-user .support-msg-file-chip{background:rgba(255,255,255,.18);}
+  .support-msg-file-chip .support-attach-file-icon{
+    flex:none; width:32px; height:32px; border-radius:8px;
+    background:var(--paper); display:flex; align-items:center; justify-content:center;
+  }
+  .support-msg-file-chip .support-attach-file-name{
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.88rem;
+  }
   .support-msg-user{
     align-self:flex-end;
     background:linear-gradient(135deg, var(--brown) 0%, var(--brown-deep) 100%);
@@ -1519,8 +1595,22 @@
     background:var(--bg); border:1px solid var(--line); border-radius:14px;
   }
   .support-attach-preview[hidden]{display:none;}
-  .support-attach-preview img{
+  .support-attach-preview img,
+  .support-attach-preview-video{
     width:48px; height:48px; object-fit:cover; border-radius:9px; flex:none;
+    background:#000;
+  }
+  .support-attach-file-chip{
+    display:flex; align-items:center; gap:8px; min-width:0; flex:1;
+  }
+  .support-attach-file-icon{
+    flex:none; width:36px; height:36px; border-radius:9px;
+    background:var(--paper); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+  }
+  .support-attach-file-name{
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:.9rem; color:var(--ink);
   }
   .support-attach-remove{
     margin-left:auto; flex:none;
