@@ -134,6 +134,13 @@
       }
     } else {
       badge.hidden = true;
+      // Belt-and-suspenders: also clear the stale number itself, not just
+      // the hidden attribute. If `hidden` ever fails to actually hide the
+      // element again (e.g. a future CSS change reintroduces the same
+      // display:flex-beats-[hidden] specificity fight fixed in
+      // styles.css), this stops it from silently showing a leftover
+      // count like "9+" instead of just doing nothing.
+      badge.textContent = '';
     }
   }
 

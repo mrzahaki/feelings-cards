@@ -1258,6 +1258,17 @@
     font-family:'Quicksand', sans-serif; font-weight:700; font-size:.7rem;
     border-radius:100px; border:2.5px solid var(--bg);
   }
+  /* `.support-badge{display:flex}` above and the browser's built-in
+     `[hidden]{display:none}` are the same specificity (0-1-0 each), and
+     an author stylesheet rule always wins over the user-agent default at
+     equal specificity — so without this line, setting badge.hidden=true
+     in support.js visually did nothing: the badge stayed on screen
+     showing whatever count it last had (stuck on "9+" after opening and
+     reading the chat, only looking "gone" after a full reload reset its
+     DOM back to the markup default). This selector is one level more
+     specific (0-2-0), so it correctly wins and the hidden attribute
+     actually hides the element again. */
+  .support-badge[hidden]{display:none;}
   @keyframes support-badge-pop{
     0%{transform:scale(0);} 55%{transform:scale(1.25);} 100%{transform:scale(1);}
   }
