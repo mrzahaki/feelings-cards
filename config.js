@@ -346,6 +346,10 @@ window.SITE_CONFIG = {
     errorAttachTooMany: "You can attach up to {max} files per message.",
     errorAttachTooManyVideos: "Only 1 video per message, please.",
     errorAttachGeneric: "Couldn't attach that file — please try again.",
+    // Shown briefly while the widget fetches a file support sent you from
+    // Telegram (see apps-script-support.gs's v4 notes) — it's a one-time
+    // fetch per attachment, not a persistent loading state.
+    attachmentLoadingLabel: "Loading attachment…",
 
     // ---- emoji picker ----
     emojiLabel: "Add an emoji",

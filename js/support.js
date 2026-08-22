@@ -80,6 +80,20 @@
   // apps-script-support.gs's constants block).
   let pendingAttachments = [];
 
+  // ---- attachments arriving FROM support (Telegram) ----
+  // A 'support' message can carry an attachmentId (see
+  // apps-script-support.gs's v4 notes) instead of an inline attachments
+  // array — the file itself was never sent to us, just a pointer into
+  // the server's short-lived cache. remoteAttachmentCache holds whatever
+  // we've fetched so far this session (id -> {status, mimeType,
+  // fileName, category, data}); nothing here is ever written to
+  // localStorage/sessionStorage, same no-persistence rule as the rest of
+  // this file. attachmentFetchesInFlight just prevents kicking off a
+  // second fetch for the same id while the first is still in flight
+  // (e.g. a re-render before it resolves).
+  const remoteAttachmentCache = new Map();
+  const attachmentFetchesInFlight = new Set();
+
   // ---- polling ----
   // Open + focused: poll often for a responsive feel. Closed (but still
   // logged in): poll much less often, just to surface the unread badge
@@ -291,6 +305,12 @@
         }
       });
       wrap.appendChild(attWrap);
+    } else if (m.attachmentId) {
+      // A support reply that came with a photo/video/document — see
+      // apps-script-support.gs's v4 notes. Nothing arrives with the
+      // message itself; this kicks off (or reuses) a one-time fetch and
+      // renders whatever state that fetch is currently in.
+      wrap.appendChild(renderRemoteAttachment_(m.attachmentId));
     }
 
     if (m.text) {
@@ -308,6 +328,82 @@
     }
 
     return wrap;
+  }
+
+  // Renders the current state of a support-side attachment: a small
+  // "loading" chip the first time it's seen (while loadRemoteAttachment_
+  // fetches it in the background), the real image/video/file once it
+  // resolves, or nothing extra (the message's text placeholder still
+  // shows) if the fetch failed or the file already expired server-side.
+  function renderRemoteAttachment_(attachmentId) {
+    const attWrap = document.createElement('div');
+    attWrap.className = 'support-msg-attachments';
+    const entry = remoteAttachmentCache.get(attachmentId);
+
+    if (entry && entry.status === 'done') {
+      attWrap.appendChild(buildRemoteAttachmentEl_(entry));
+    } else if (entry && entry.status === 'error') {
+      return document.createComment(''); // text placeholder alone is still shown by the caller
+    } else {
+      const chip = document.createElement('span');
+      chip.className = 'support-msg-file-chip';
+      chip.textContent = C.support.attachmentLoadingLabel || 'Loading attachment…';
+      attWrap.appendChild(chip);
+      loadRemoteAttachment_(attachmentId);
+    }
+    return attWrap;
+  }
+
+  function buildRemoteAttachmentEl_(entry) {
+    const url = 'data:' + entry.mimeType + ';base64,' + entry.data;
+    if (entry.category === 'image') {
+      const img = document.createElement('img');
+      img.className = 'support-msg-img';
+      img.src = url;
+      img.alt = 'Image from support';
+      return img;
+    }
+    if (entry.category === 'video') {
+      const video = document.createElement('video');
+      video.className = 'support-msg-video';
+      video.src = url;
+      video.controls = true;
+      video.setAttribute('aria-label', 'Video from support');
+      return video;
+    }
+    const chip = document.createElement('a');
+    chip.className = 'support-msg-file-chip';
+    chip.href = url;
+    chip.download = entry.fileName || 'attachment';
+    const icon = document.createElement('span');
+    icon.className = 'support-attach-file-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '📎';
+    const name = document.createElement('span');
+    name.className = 'support-attach-file-name';
+    name.textContent = entry.fileName || 'Download attachment';
+    chip.appendChild(icon);
+    chip.appendChild(name);
+    return chip;
+  }
+
+  async function loadRemoteAttachment_(attachmentId) {
+    if (attachmentFetchesInFlight.has(attachmentId) || remoteAttachmentCache.has(attachmentId)) return;
+    attachmentFetchesInFlight.add(attachmentId);
+    try {
+      const data = await callApi('fetchAttachment', { attachmentId: attachmentId });
+      remoteAttachmentCache.set(attachmentId, data.ok
+        ? { status: 'done', mimeType: data.mimeType, fileName: data.fileName, category: data.category, data: data.data }
+        : { status: 'error' });
+    } catch (err) {
+      remoteAttachmentCache.set(attachmentId, { status: 'error' });
+    } finally {
+      attachmentFetchesInFlight.delete(attachmentId);
+      // Only worth a re-render if the panel is actually open — a
+      // background poll that happened to bring in a support attachment
+      // will just show it correctly next time the buyer opens the panel.
+      if (isOpen) renderMessages_({ stickToBottom: isNearBottom_() });
+    }
   }
 
   function dayKeyFor_(iso) {
