@@ -343,6 +343,58 @@
     .lb-nav{background:rgba(255,254,249,.9);}
   }
 
+  /* ---------- Support attachment viewer ---------- */
+  /* Shares .lightbox/.lightbox-panel's backdrop + pop-in animation, just
+     roomier (this is for actually reading/inspecting one photo or video,
+     not a fixed-size card) and with a caption+download footer instead of
+     prev/next nav. See support.js for open/close wiring. */
+  .support-attach-lightbox-panel{
+    max-width:min(92vw, 760px);
+    max-height:92vh;
+    padding:16px;
+    display:flex; flex-direction:column; gap:0;
+  }
+  .support-attach-lightbox-media{
+    display:flex; align-items:center; justify-content:center;
+    min-height:0; overflow:hidden;
+    border-radius:14px; background:#000;
+  }
+  .support-attach-lightbox-media img,
+  .support-attach-lightbox-media video{
+    display:block;
+    max-width:100%; max-height:calc(92vh - 120px);
+    width:auto; height:auto;
+    border-radius:14px;
+  }
+  .support-attach-lightbox-footer{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding-top:12px;
+  }
+  .support-attach-lb-caption{
+    padding:0; margin:0; text-align:left;
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .support-attach-lb-download{
+    flex:none;
+    display:flex; align-items:center; gap:6px;
+    font-family:'Quicksand', sans-serif; font-weight:700; font-size:.85rem;
+    color:#fff; text-decoration:none;
+    background:linear-gradient(135deg, var(--brown) 0%, var(--brown-deep) 100%);
+    border-radius:100px; padding:9px 16px;
+    box-shadow:0 3px 0 var(--brown-deep);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .support-attach-lb-download svg{width:16px; height:16px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-attach-lb-download:hover{transform:translateY(2px); box-shadow:0 1px 0 var(--brown-deep);}
+  }
+  .support-attach-lb-download:active{transform:translateY(3px); box-shadow:none;}
+  @media (max-width:640px){
+    .support-attach-lightbox-panel{max-width:96vw; padding:12px;}
+    .support-attach-lightbox-media img,
+    .support-attach-lightbox-media video{max-height:calc(92vh - 108px);}
+  }
+
   /* ---------- Feelings wheel ---------- */
   section.wheel-section{padding:56px 0 66px;}
   .wheel-stage{
@@ -1479,16 +1531,64 @@
     display:block; max-width:100%; max-height:220px;
     border-radius:10px; object-fit:cover;
   }
+  /* Wraps a sent/received image (or a received video's expand button) so
+     it's obviously tappable — see support.js's openAttachmentLightbox_.
+     Native <video controls> stays directly clickable for play/pause/etc,
+     so videos get a small corner button instead of wrapping the whole
+     player (see .support-attach-expand below). */
+  .support-attach-tap{
+    display:block; padding:0; border:none; background:none; cursor:pointer;
+    border-radius:10px; position:relative;
+  }
+  .support-attach-tap .support-msg-img{cursor:pointer;}
+  .support-attach-tap .support-attach-zoom-hint{
+    position:absolute; right:6px; bottom:6px;
+    width:26px; height:26px; border-radius:50%;
+    background:rgba(0,0,0,.55); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.8rem; pointer-events:none;
+  }
+  .support-attach-video-wrap{position:relative; display:block;}
+  .support-attach-expand{
+    position:absolute; top:6px; right:6px; z-index:1;
+    width:28px; height:28px; padding:0; border-radius:50%;
+    background:rgba(0,0,0,.55); color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .support-attach-expand svg{width:14px; height:14px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-attach-expand:hover{background:rgba(0,0,0,.75);}
+  }
   .support-msg-img + .support-msg-text,
   .support-msg-video + .support-msg-text,
   .support-msg-file-chip + .support-msg-text,
   .support-msg-attachments + .support-msg-text{margin-top:6px;}
+  /* Wraps a document chip (+, for a PDF, a second small download-only
+     icon button alongside it) — see support.js's buildFileChip_. */
+  .support-msg-file-chip-wrap{display:flex; align-items:center; gap:6px;}
   .support-msg-file-chip{
     display:flex; align-items:center; gap:8px;
     padding:8px 10px; border-radius:10px;
     background:rgba(0,0,0,.06);
+    text-decoration:none; color:inherit; cursor:pointer;
   }
   .support-msg-user .support-msg-file-chip{background:rgba(255,255,255,.18);}
+  .support-msg-file-chip-static{cursor:default;}
+  @media (hover:hover) and (pointer:fine){
+    .support-msg-file-chip:not(.support-msg-file-chip-static):hover{background:rgba(0,0,0,.1);}
+    .support-msg-user .support-msg-file-chip:not(.support-msg-file-chip-static):hover{background:rgba(255,255,255,.26);}
+  }
+  .support-attach-file-dl{
+    flex:none; width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.06); color:inherit; text-decoration:none;
+  }
+  .support-msg-user .support-attach-file-dl{background:rgba(255,255,255,.18);}
+  .support-attach-file-dl svg{width:15px; height:15px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-attach-file-dl:hover{background:rgba(0,0,0,.1);}
+    .support-msg-user .support-attach-file-dl:hover{background:rgba(255,255,255,.26);}
+  }
   .support-msg-file-chip .support-attach-file-icon{
     flex:none; width:32px; height:32px; border-radius:8px;
     background:var(--paper); display:flex; align-items:center; justify-content:center;

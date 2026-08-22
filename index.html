@@ -463,6 +463,30 @@
   </div>
 </div>
 
+<!-- Support attachment viewer: opened by tapping an image/video bubble in
+     the support chat (either side — something the buyer sent, or
+     something support sent back). Unlike the card lightbox above (fixed
+     set of cards, next/prev), this one is filled in on the fly by
+     support.js with whatever single attachment was tapped, so it has no
+     nav arrows — just a bigger view of that one file plus an explicit
+     download link (the inline chat bubble stays small; this is where
+     "actually open it" happens). Documents don't use this modal at all —
+     see support.js's file-chip handling, which opens/downloads those
+     directly since a Word/Excel/PowerPoint file can't be previewed here. -->
+<div class="lightbox support-attach-lightbox" id="supportAttachLightbox" role="dialog" aria-modal="true" aria-label="Attachment preview">
+  <div class="lightbox-panel support-attach-lightbox-panel">
+    <button class="lb-close" id="supportAttachLbClose" aria-label="Close preview">✕</button>
+    <div class="support-attach-lightbox-media" id="supportAttachLbMedia"></div>
+    <div class="support-attach-lightbox-footer">
+      <p class="lightbox-caption support-attach-lb-caption" id="supportAttachLbCaption"></p>
+      <a class="support-attach-lb-download" id="supportAttachLbDownload" download>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 4V15M12 15L7.5 10.5M12 15L16.5 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18.5H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span id="supportAttachLbDownloadLabel">Download</span>
+      </a>
+    </div>
+  </div>
+</div>
+
 
 <!-- Support chat: logged-in buyers only. Hidden by default (both the
      `hidden` attribute here AND support.js's own Account.isLoggedIn()

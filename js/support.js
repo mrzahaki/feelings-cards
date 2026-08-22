@@ -38,6 +38,13 @@
   const resizeHandle = document.getElementById('supportResizeHandle');
   const grabber = document.getElementById('supportGrabber');
   const messagesEl = document.getElementById('supportMessages');
+  // Attachment viewer: shared by both directions (buyer-sent and
+  // support-sent images/videos) — see openAttachmentLightbox_ below.
+  const supportAttachLightbox = document.getElementById('supportAttachLightbox');
+  const supportAttachLbClose = document.getElementById('supportAttachLbClose');
+  const supportAttachLbMedia = document.getElementById('supportAttachLbMedia');
+  const supportAttachLbCaption = document.getElementById('supportAttachLbCaption');
+  const supportAttachLbDownload = document.getElementById('supportAttachLbDownload');
   const scrollLatestBtn = document.getElementById('supportScrollLatest');
   const quickRepliesEl = document.getElementById('supportQuickReplies');
   const form = document.getElementById('supportForm');
@@ -277,31 +284,11 @@
       attWrap.className = 'support-msg-attachments';
       m.attachments.forEach(att => {
         if (att.kind === 'image' && att.url) {
-          const imgEl = document.createElement('img');
-          imgEl.className = 'support-msg-img';
-          imgEl.src = att.url;
-          imgEl.alt = 'Image attached to message';
-          attWrap.appendChild(imgEl);
+          attWrap.appendChild(buildTappableImage_(att.url, att.name || 'Photo'));
         } else if (att.kind === 'video' && att.url) {
-          const videoEl = document.createElement('video');
-          videoEl.className = 'support-msg-video';
-          videoEl.src = att.url;
-          videoEl.controls = true;
-          videoEl.setAttribute('aria-label', 'Video attached to message');
-          attWrap.appendChild(videoEl);
+          attWrap.appendChild(buildTappableVideo_(att.url, att.name || 'Video'));
         } else if (att.kind === 'file' && att.name) {
-          const chip = document.createElement('span');
-          chip.className = 'support-msg-file-chip';
-          const icon = document.createElement('span');
-          icon.className = 'support-attach-file-icon';
-          icon.setAttribute('aria-hidden', 'true');
-          icon.textContent = '📎';
-          const name = document.createElement('span');
-          name.className = 'support-attach-file-name';
-          name.textContent = att.name;
-          chip.appendChild(icon);
-          chip.appendChild(name);
-          attWrap.appendChild(chip);
+          attWrap.appendChild(buildFileChip_(att.name, att.url, att.mimeType));
         }
       });
       wrap.appendChild(attWrap);
@@ -346,7 +333,7 @@
       return document.createComment(''); // text placeholder alone is still shown by the caller
     } else {
       const chip = document.createElement('span');
-      chip.className = 'support-msg-file-chip';
+      chip.className = 'support-msg-file-chip support-msg-file-chip-static';
       chip.textContent = C.support.attachmentLoadingLabel || 'Loading attachment…';
       attWrap.appendChild(chip);
       loadRemoteAttachment_(attachmentId);
@@ -355,36 +342,186 @@
   }
 
   function buildRemoteAttachmentEl_(entry) {
-    const url = 'data:' + entry.mimeType + ';base64,' + entry.data;
     if (entry.category === 'image') {
-      const img = document.createElement('img');
-      img.className = 'support-msg-img';
-      img.src = url;
-      img.alt = 'Image from support';
-      return img;
+      return buildTappableImage_(entry.url, entry.fileName || 'Photo');
     }
     if (entry.category === 'video') {
-      const video = document.createElement('video');
-      video.className = 'support-msg-video';
-      video.src = url;
-      video.controls = true;
-      video.setAttribute('aria-label', 'Video from support');
-      return video;
+      return buildTappableVideo_(entry.url, entry.fileName || 'Video');
     }
+    return buildFileChip_(entry.fileName, entry.url, entry.mimeType);
+  }
+
+  // ---- shared attachment builders ----
+  // Used for BOTH directions — something the buyer sent (att.url is an
+  // object URL over their own blob, set at compose time) and something
+  // support sent back (entry.url is an object URL built once the file's
+  // bytes come back from 'fetchAttachment' — see loadRemoteAttachment_
+  // below). Object URLs, not data: URIs: a data: URI can silently fail
+  // to open/download once a file gets past a few MB, and some browsers
+  // block navigating straight to one — an object URL doesn't have
+  // either problem and is exactly what makes "tap to view/download"
+  // actually work reliably here.
+  //
+  // Images: the whole thumbnail is a button — tapping opens the bigger
+  // viewer (openAttachmentLightbox_) with an explicit Download link.
+  // Videos: the native <video controls> stays directly tappable for
+  // play/pause/seek/volume, so a small corner button opens the same
+  // bigger viewer instead of wrapping the whole player. Documents
+  // (PDF/Word/Excel/etc): a PDF opens in a new tab (browsers can render
+  // those natively) with a small separate download icon alongside it;
+  // anything else browsers can't display goes straight to a download —
+  // see buildFileChip_.
+  function buildTappableImage_(url, name) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'support-attach-tap';
+    btn.setAttribute('aria-label', 'View ' + name + ' full size');
+    const img = document.createElement('img');
+    img.className = 'support-msg-img';
+    img.src = url;
+    img.alt = name;
+    btn.appendChild(img);
+    const hint = document.createElement('span');
+    hint.className = 'support-attach-zoom-hint';
+    hint.setAttribute('aria-hidden', 'true');
+    hint.textContent = '🔍';
+    btn.appendChild(hint);
+    btn.addEventListener('click', () => openAttachmentLightbox_('image', url, name));
+    return btn;
+  }
+
+  function buildTappableVideo_(url, name) {
+    const wrap = document.createElement('div');
+    wrap.className = 'support-attach-video-wrap';
+    const video = document.createElement('video');
+    video.className = 'support-msg-video';
+    video.src = url;
+    video.controls = true;
+    video.setAttribute('aria-label', name);
+    wrap.appendChild(video);
+    const expand = document.createElement('button');
+    expand.type = 'button';
+    expand.className = 'support-attach-expand';
+    expand.setAttribute('aria-label', 'Expand ' + name);
+    expand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 4H4V9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4H20V9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20H4V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20H20V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    expand.addEventListener('click', () => openAttachmentLightbox_('video', url, name));
+    wrap.appendChild(expand);
+    return wrap;
+  }
+
+  function buildFileChip_(fileName, url, mimeType) {
+    const name = fileName || 'attachment';
+    if (!url) {
+      // Defensive fallback only — shouldn't happen now that both send
+      // paths (addAttachment_) and receive paths (loadRemoteAttachment_)
+      // always produce an object URL, but better a plain label than a
+      // dead/broken link if something upstream ever changes.
+      const span = document.createElement('span');
+      span.className = 'support-msg-file-chip support-msg-file-chip-static';
+      const icon = document.createElement('span');
+      icon.className = 'support-attach-file-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '📎';
+      const label = document.createElement('span');
+      label.className = 'support-attach-file-name';
+      label.textContent = name;
+      span.appendChild(icon);
+      span.appendChild(label);
+      return span;
+    }
+
+    const isPdf = mimeType === 'application/pdf';
+    const wrap = document.createElement('span');
+    wrap.className = 'support-msg-file-chip-wrap';
+
     const chip = document.createElement('a');
     chip.className = 'support-msg-file-chip';
     chip.href = url;
-    chip.download = entry.fileName || 'attachment';
+    if (isPdf) {
+      // Browsers can render a PDF natively — open it in a new tab
+      // instead of forcing a download, same as tapping a PDF link
+      // anywhere else on the web.
+      chip.target = '_blank';
+      chip.rel = 'noopener noreferrer';
+    } else {
+      // Word/Excel/PowerPoint/plain text/etc — nothing a browser tab can
+      // display, so go straight to saving the file.
+      chip.download = name;
+    }
     const icon = document.createElement('span');
     icon.className = 'support-attach-file-icon';
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = '📎';
-    const name = document.createElement('span');
-    name.className = 'support-attach-file-name';
-    name.textContent = entry.fileName || 'Download attachment';
+    icon.textContent = isPdf ? '📄' : '📎';
+    const label = document.createElement('span');
+    label.className = 'support-attach-file-name';
+    label.textContent = name;
     chip.appendChild(icon);
-    chip.appendChild(name);
-    return chip;
+    chip.appendChild(label);
+    wrap.appendChild(chip);
+
+    if (isPdf) {
+      // Still give an explicit, one-tap way to save it — opening in a
+      // new tab doesn't preclude also wanting a local copy.
+      const dl = document.createElement('a');
+      dl.className = 'support-attach-file-dl';
+      dl.href = url;
+      dl.download = name;
+      dl.setAttribute('aria-label', 'Download ' + name);
+      dl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 4V15M12 15L7.5 10.5M12 15L16.5 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18.5H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      wrap.appendChild(dl);
+    }
+
+    return wrap;
+  }
+
+  // ---- attachment viewer (bigger view + explicit download) ----
+  function openAttachmentLightbox_(kind, url, name) {
+    if (!supportAttachLightbox) { window.open(url, '_blank', 'noopener'); return; } // defensive fallback if markup's ever missing
+    supportAttachLbMedia.innerHTML = '';
+    if (kind === 'video') {
+      const video = document.createElement('video');
+      video.src = url;
+      video.controls = true;
+      video.autoplay = true;
+      video.setAttribute('aria-label', name);
+      supportAttachLbMedia.appendChild(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = name;
+      supportAttachLbMedia.appendChild(img);
+    }
+    supportAttachLbCaption.textContent = name;
+    supportAttachLbDownload.href = url;
+    supportAttachLbDownload.download = name;
+    supportAttachLightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    supportAttachLbClose.focus();
+  }
+
+  function closeAttachmentLightbox_() {
+    if (!supportAttachLightbox) return;
+    supportAttachLightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    supportAttachLbMedia.innerHTML = ''; // stop a playing video rather than leave it decoding off-screen
+  }
+
+  if (supportAttachLightbox) {
+    supportAttachLbClose.addEventListener('click', closeAttachmentLightbox_);
+    supportAttachLightbox.addEventListener('click', e => { if (e.target === supportAttachLightbox) closeAttachmentLightbox_(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && supportAttachLightbox.classList.contains('open')) closeAttachmentLightbox_();
+    });
+  }
+
+  // Decodes a base64 string (as returned by 'fetchAttachment') into a
+  // Blob so it can become an object URL — see the big comment above
+  // buildTappableImage_ for why that matters over a data: URI.
+  function base64ToBlob_(base64, mimeType) {
+    const byteChars = atob(base64);
+    const bytes = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    return new Blob([bytes], { type: mimeType });
   }
 
   async function loadRemoteAttachment_(attachmentId) {
@@ -392,9 +529,13 @@
     attachmentFetchesInFlight.add(attachmentId);
     try {
       const data = await callApi('fetchAttachment', { attachmentId: attachmentId });
-      remoteAttachmentCache.set(attachmentId, data.ok
-        ? { status: 'done', mimeType: data.mimeType, fileName: data.fileName, category: data.category, data: data.data }
-        : { status: 'error' });
+      if (data.ok) {
+        const blob = base64ToBlob_(data.data, data.mimeType);
+        const url = URL.createObjectURL(blob);
+        remoteAttachmentCache.set(attachmentId, { status: 'done', mimeType: data.mimeType, fileName: data.fileName, category: data.category, url: url });
+      } else {
+        remoteAttachmentCache.set(attachmentId, { status: 'error' });
+      }
     } catch (err) {
       remoteAttachmentCache.set(attachmentId, { status: 'error' });
     } finally {
@@ -1000,7 +1141,12 @@
   // Only image/video are things a browser can render straight from an
   // object URL; a generic document just shows its name instead.
   function addAttachment_(blob, mimeType, kind, fileName) {
-    const previewUrl = (kind === 'image' || kind === 'video') ? URL.createObjectURL(blob) : null;
+    // An object URL for every kind now, not just image/video: a staged
+    // document needs one too so that once it's sent, the buyer's own
+    // bubble can open/download it the same way a support-sent document
+    // can (see buildFileChip_) instead of showing a name with nothing
+    // behind it.
+    const previewUrl = URL.createObjectURL(blob);
     pendingAttachments.push({ blob, mimeType, previewUrl, kind, fileName: fileName || 'attachment' });
     renderAttachmentChips_();
     input.focus();
@@ -1194,7 +1340,7 @@
     // only place this preview ever comes from, including for the bubble
     // that stays on screen after a successful send. Documents have no
     // url (nothing to render inline), so they just carry a name.
-    const optimisticAttachments = attachments.map(a => ({ kind: a.kind, url: a.previewUrl, name: a.fileName }));
+    const optimisticAttachments = attachments.map(a => ({ kind: a.kind, url: a.previewUrl, name: a.fileName, mimeType: a.mimeType }));
     const optimistic = {
       id: 'pending-' + Date.now(),
       sender: 'user',
