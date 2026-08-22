@@ -329,7 +329,7 @@ window.SITE_CONFIG = {
     attachAriaLabel: "Attach a file",
     attachRemoveLabel: "Remove attachment",
     attachDropHint: "Drop file to attach",
-    errorAttachType: "That file type isn't supported. Please attach a JPG/PNG/WebP/GIF image, an MP4/WebM/MOV video, or a PDF/Word/Excel/PowerPoint/text file.",
+    errorAttachType: "Unsupported file type — try an image, video, or PDF/Office file.",
     errorAttachTooLarge: "That image is too large — try a smaller one or a screenshot instead of the original photo.",
     errorAttachTooLargeVideo: "That video is too large for chat (max ~15MB) — try a shorter clip or a lower resolution export.",
     errorAttachTooLargeDoc: "That file is too large for chat (max ~8MB).",
