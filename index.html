@@ -467,28 +467,66 @@
 <!-- Support chat: logged-in buyers only. Hidden by default (both the
      `hidden` attribute here AND support.js's own Account.isLoggedIn()
      check below gate visibility, so there's no flash of the launcher
-     before account.js has confirmed a session one way or the other). -->
+     before account.js has confirmed a session one way or the other).
+     Compact circular launcher (icon-only at every breakpoint — the label
+     still exists for screen readers / hover tooltip, just visually
+     hidden) rather than the old text pill, so it stays out of the way of
+     page content and the reCAPTCHA badge next to it. -->
 <button type="button" id="supportLauncher" class="support-launcher" hidden aria-haspopup="dialog" aria-expanded="false" aria-controls="supportPanel">
-  <span class="support-launcher-icon" aria-hidden="true">💬</span>
+  <span class="support-launcher-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 12.5C4 7.80558 7.94809 4 12.8125 4C17.6769 4 21.625 7.80558 21.625 12.5C21.625 17.1944 17.6769 21 12.8125 21C11.4076 21 10.0795 20.6857 8.90625 20.125L4.375 21.5L5.71875 17.4375C4.65029 16.0234 4 14.3391 4 12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="9" cy="12.5" r="1.15" fill="currentColor"/>
+      <circle cx="13" cy="12.5" r="1.15" fill="currentColor"/>
+      <circle cx="17" cy="12.5" r="1.15" fill="currentColor"/>
+    </svg>
+  </span>
   <span id="supportLauncherLabel" class="support-launcher-label"></span>
   <span id="supportBadge" class="support-badge" hidden>0</span>
 </button>
 
+<div class="support-backdrop" id="supportBackdrop" hidden></div>
+
 <div class="support-panel" id="supportPanel" role="dialog" aria-modal="false" aria-label="Support chat" aria-hidden="true" hidden>
+  <div class="support-panel-grabber" aria-hidden="true"><span></span></div>
   <div class="support-panel-header">
-    <div>
-      <h3 id="supportPanelTitle"></h3>
-      <p class="support-panel-subtitle" id="supportPanelSubtitle"></p>
+    <div class="support-panel-heading">
+      <span class="support-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 12.5C4 7.80558 7.94809 4 12.8125 4C17.6769 4 21.625 7.80558 21.625 12.5C21.625 17.1944 17.6769 21 12.8125 21C11.4076 21 10.0795 20.6857 8.90625 20.125L4.375 21.5L5.71875 17.4375C4.65029 16.0234 4 14.3391 4 12.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="support-avatar-dot" aria-hidden="true"></span>
+      </span>
+      <div>
+        <h3 id="supportPanelTitle"></h3>
+        <p class="support-panel-subtitle" id="supportPanelSubtitle"></p>
+      </div>
     </div>
-    <button type="button" class="support-close" id="supportClose" aria-label="Close chat">✕</button>
+    <button type="button" class="support-close" id="supportClose" aria-label="Close chat">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
   </div>
 
-  <div class="support-messages" id="supportMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+  <div class="support-messages-wrap">
+    <div class="support-messages" id="supportMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <button type="button" class="support-scroll-latest" id="supportScrollLatest" hidden>
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="supportScrollLatestLabel">New messages</span>
+    </button>
+  </div>
+
+  <div class="support-quick-replies" id="supportQuickReplies" hidden></div>
 
   <form class="support-form" id="supportForm">
     <label class="visually-hidden" for="supportInput">Message to support</label>
-    <textarea id="supportInput" class="support-input" rows="1" required></textarea>
-    <button type="submit" id="supportSendBtn" class="support-send"></button>
+    <div class="support-input-wrap">
+      <textarea id="supportInput" class="support-input" rows="1" required></textarea>
+      <span class="support-char-count" id="supportCharCount" hidden></span>
+    </div>
+    <button type="submit" id="supportSendBtn" class="support-send" aria-label="Send message">
+      <svg class="support-send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 12L19.5 4.5L15 19.5L11 13L4.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span class="support-send-label" id="supportSendLabel"></span>
+    </button>
   </form>
   <p class="status-msg support-status" id="supportStatus" role="status"></p>
 </div>

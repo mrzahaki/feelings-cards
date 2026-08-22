@@ -146,6 +146,7 @@
       input.setAttribute('aria-label', C.support.inputAriaLabel);
       input.maxLength = C.support.charLimit;
     }
-    set('supportSendBtn', C.support.sendLabel);
+    set('supportSendLabel', C.support.sendLabel);
+    set('supportScrollLatestLabel', C.support.scrollToLatestLabel);
   }
 })();

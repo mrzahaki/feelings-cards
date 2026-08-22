@@ -310,6 +310,19 @@ window.SITE_CONFIG = {
     errorGeneric: "Couldn't send that — please try again in a moment.",
     errorTooLong: "That message is too long.",
     charLimit: 1500,
+    // Shown as tappable chips in the empty state, before the buyer's sent
+    // their first message — fills the input on tap rather than auto-
+    // sending, so nothing goes out without the buyer confirming it.
+    quickRepliesLabel: "Common questions",
+    quickReplies: [
+      "Where's my order?",
+      "I didn't get my PDF",
+      "Payment issue",
+      "Wrong email on my account",
+    ],
+    scrollToLatestLabel: "New messages",
+    todayLabel: "Today",
+    yesterdayLabel: "Yesterday",
   },
 
   // ---- footer -------------------------------------------------------------
