@@ -408,7 +408,10 @@
   function writeSizePref_(patch) {
     try { sessionStorage.setItem(SIZE_KEY, JSON.stringify(Object.assign(readSizePref_(), patch))); } catch (e) { /* ignore */ }
   }
-  function clamp_(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function clamp_(v, min, max) {
+    if (max < min) return max; // viewport smaller than our nominal minimum — fit the screen, don't overflow it
+    return Math.max(min, Math.min(max, v));
+  }
 
   const DESKTOP_MIN_W = 340, DESKTOP_MIN_H = 420;
   const MOBILE_MIN_H = 320;
@@ -780,7 +783,7 @@
 
         canvas.toBlob(blob => {
           if (!blob) { reject(new Error('encode failed')); return; }
-          if (blob.size > ATTACH_MAX_BYTES) {
+          if (blob.size > ATTACH_MAX_BYTES_IMAGE) {
             reject(new Error('too large even after compression'));
             return;
           }

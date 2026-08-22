@@ -494,13 +494,10 @@
        equivalent job for sheet height. Keyboard-operable (arrow keys)
        and double-click/tap resets to the default size — see support.js. -->
   <div class="support-resize-handle" id="supportResizeHandle" role="button" tabindex="0" aria-label="Resize chat window. Drag the corner, or use arrow keys. Double-click to reset.">
-    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="12" cy="4" r="1.3" fill="currentColor"/>
-      <circle cx="12" cy="8" r="1.3" fill="currentColor"/>
-      <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
-      <circle cx="12" cy="12" r="1.3" fill="currentColor"/>
-      <circle cx="8" cy="12" r="1.3" fill="currentColor"/>
-      <circle cx="4" cy="12" r="1.3" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M19 19L13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+      <path d="M17 17L7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <path d="M13 7H7V13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </div>
 
@@ -526,16 +523,11 @@
     <div class="support-panel-header-actions">
       <button type="button" class="support-maximize" id="supportMaximize" aria-label="Expand chat window" aria-pressed="false">
         <svg class="support-maximize-icon-expand" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M9 4H4V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M15 20H20V15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M20 4L14 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M4 20L10 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <rect x="5" y="5" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
         </svg>
         <svg class="support-maximize-icon-collapse" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" hidden>
-          <path d="M9 4V9H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M15 20V15H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M14 10L20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M10 14L4 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <rect x="9" y="4" width="11" height="11" rx="1.3" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="4" y="9" width="11" height="11" rx="1.3" stroke="currentColor" stroke-width="1.6"/>
         </svg>
       </button>
       <button type="button" class="support-close" id="supportClose" aria-label="Close chat">

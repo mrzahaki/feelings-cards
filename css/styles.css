@@ -1316,14 +1316,14 @@
      full-width sheet, so the grabber further down handles height instead. */
   .support-resize-handle{
     position:absolute; top:0; left:0; z-index:5;
-    width:28px; height:28px; padding:6px;
+    width:26px; height:26px; padding:7px;
     display:flex; align-items:flex-start; justify-content:flex-start;
     color:var(--ink-soft);
     cursor:nwse-resize; touch-action:none;
     -webkit-tap-highlight-color:transparent;
     border-radius:10px 0 10px 0;
   }
-  .support-resize-handle svg{width:15px; height:15px; opacity:.75; transition:opacity .15s ease, color .15s ease;}
+  .support-resize-handle svg{width:13px; height:13px; opacity:.65; transition:opacity .15s ease, color .15s ease;}
   .support-resize-handle:focus-visible{outline:3px solid var(--brown); outline-offset:-2px;}
   @media (hover:hover) and (pointer:fine){
     .support-resize-handle:hover{color:var(--brown-deep);}
@@ -1440,6 +1440,15 @@
     margin:auto; text-align:center; color:var(--ink-soft); font-size:.88rem;
     max-width:26ch; padding:0 6px;
   }
+  /* Empty/quick-replies state: don't let the (empty) scrollback area balloon
+     to fill the panel's full height — hug the content instead so there's no
+     dead space between the intro text and the quick-reply chips below it.
+     Once real messages exist, .support-empty is gone and flex:1 above wins
+     again so the actual conversation still fills/scrolls normally. */
+  .support-messages-wrap:has(.support-empty),
+  .support-messages:has(.support-empty){
+    flex:0 0 auto; /* never shrink below the intro text's own height, or it overflows onto the chips below it */
+  }
 
   .support-day-sep{
     display:flex; align-items:center; justify-content:center;
@@ -1520,6 +1529,13 @@
 
   /* ---- quick reply chips (empty state only) ---- */
   .support-quick-replies{padding:0 16px 12px; flex:none;}
+  /* Empty/quick-replies state (the only time this element is ever visible —
+     see support.js's quickRepliesEl.hidden toggle): let it absorb the panel's
+     leftover height instead of .support-messages-wrap above. Its own content
+     (label + chip row) still packs to the top as normal block flow, so any
+     extra room collects below the chips, right above the composer, instead
+     of as a gap between the intro text and the chips. */
+  .support-quick-replies:not([hidden]){flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden;}
   .support-quick-replies[hidden]{display:none;}
   .support-quick-replies-label{
     display:block; font-family:'Quicksand', sans-serif; font-weight:700; font-size:.7rem;
@@ -1544,17 +1560,18 @@
     display:flex; align-items:flex-end; gap:8px;
     padding:12px 14px; border-top:1px solid var(--line); flex:none;
   }
-  .support-input-wrap{flex:1; position:relative; display:flex;}
+  .support-input-wrap{flex:1; min-width:0; position:relative; display:flex;}
   .support-input{
-    flex:1; resize:none;
+    flex:1; min-width:0; resize:none;
     font-family:'Quicksand', sans-serif; font-size:1rem; color:var(--ink);
     background:var(--bg); border:1px solid var(--line); border-radius:18px;
     padding:11px 14px; max-height:110px;
   }
   .support-input:focus-visible{outline:3px solid var(--brown); outline-offset:2px;}
   .support-char-count{
-    position:absolute; right:10px; bottom:-18px;
+    position:absolute; right:10px; bottom:6px;
     font-family:'Quicksand', sans-serif; font-size:.68rem; color:var(--ink-soft);
+    background:var(--bg); padding:0 3px; border-radius:4px; pointer-events:none;
   }
   .support-char-count[hidden]{display:none;}
   .support-char-count-over{color:#B3492E; font-weight:700;}
