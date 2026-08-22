@@ -309,7 +309,30 @@ window.SITE_CONFIG = {
     supportLabel: "Support",
     errorGeneric: "Couldn't send that — please try again in a moment.",
     errorTooLong: "That message is too long.",
-    charLimit: 1500,
+    charLimit: 3000,
+
+    // ---- image attachments (paste or drag-and-drop into the chat) ----
+    // maxBytes is enforced client-side AFTER the browser-side compression
+    // step (see support.js) — it's a final safety cap, not the size a
+    // buyer's original screenshot needs to already be under. Must stay
+    // <= MAX_IMAGE_BYTES in apps-script-support.gs, or a compressed image
+    // that passes here could still get rejected server-side.
+    attachMaxBytes: 3500000,
+    attachMaxDimension: 1440, // longest side, in px, after client-side resize
+    attachAllowedLabel: "JPG, PNG, or WebP",
+    attachLabel: "Attach image",
+    attachAriaLabel: "Attach an image",
+    attachRemoveLabel: "Remove attached image",
+    attachDropHint: "Drop image to attach",
+    errorAttachType: "Please attach a JPG, PNG, or WebP image.",
+    errorAttachTooLarge: "That image is too large — try a smaller one or a screenshot instead of the original photo.",
+    errorAttachGeneric: "Couldn't attach that image — please try again.",
+
+    // ---- emoji picker ----
+    emojiLabel: "Add an emoji",
+    emojiAriaLabel: "Add an emoji",
+    emojiPopoverLabel: "Emoji picker",
+    emojis: ["😊", "🙂", "😅", "😂", "🥹", "😢", "😭", "😡", "😱", "😴", "🤔", "😬", "🥲", "😍", "🤗", "🙌", "👍", "👎", "🙏", "❤️", "✨", "🎉", "🔥", "👀", "✅", "❓", "💬", "📦", "💳", "🐛", "⏰", "🤝"],
     // Shown as tappable chips in the empty state, before the buyer's sent
     // their first message — fills the input on tap rather than auto-
     // sending, so nothing goes out without the buyer confirming it.

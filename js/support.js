@@ -42,6 +42,14 @@
   const charCountEl = document.getElementById('supportCharCount');
   const sendBtn = document.getElementById('supportSendBtn');
   const statusEl = document.getElementById('supportStatus');
+  const attachBtn = document.getElementById('supportAttachBtn');
+  const fileInput = document.getElementById('supportFileInput');
+  const attachPreview = document.getElementById('supportAttachPreview');
+  const attachPreviewImg = document.getElementById('supportAttachPreviewImg');
+  const attachRemoveBtn = document.getElementById('supportAttachRemove');
+  const dropHint = document.getElementById('supportDropHint');
+  const emojiBtn = document.getElementById('supportEmojiBtn');
+  const emojiPopover = document.getElementById('supportEmojiPopover');
   if (!launcher || !panel || !form || !input) return;
 
   let messages = [];       // in-memory only — see file header
@@ -56,6 +64,13 @@
   let unread = 0;
   let isOpen = false;
   let sending = false;
+
+  // ---- staged image attachment (paste / drag-drop / file picker) ----
+  // { blob, mimeType, previewUrl } or null. Only ever holds ONE image at
+  // a time (kept simple), and only exists client-side until send —
+  // support.js never persists it, and the server never persists it
+  // either (see apps-script-support.gs's constants block).
+  let pendingAttachment = null;
 
   // ---- polling ----
   // Open + focused: poll often for a responsive feel. Closed (but still
@@ -228,10 +243,26 @@
     wrap.className = 'support-msg ' + (m.sender === 'user' ? 'support-msg-user' : 'support-msg-support') + (grouped ? ' support-msg-grouped' : '');
     if (String(m.id).indexOf('pending-') === 0) wrap.classList.add('support-msg-pending');
 
-    const textEl = document.createElement('span');
-    textEl.className = 'support-msg-text';
-    textEl.textContent = m.text; // textContent, never innerHTML — see file header
-    wrap.appendChild(textEl);
+    // imageUrl only ever exists in this tab's own memory (an object URL
+    // over the buyer's own compressed blob) — the server never sends
+    // image bytes back, so a message loaded fresh from poll/history
+    // (e.g. after a refresh) has no imageUrl and just shows its stored
+    // text placeholder instead. See apps-script-support.gs's constants
+    // block for why images aren't persisted server-side.
+    if (m.imageUrl) {
+      const imgEl = document.createElement('img');
+      imgEl.className = 'support-msg-img';
+      imgEl.src = m.imageUrl;
+      imgEl.alt = 'Image attached to message';
+      wrap.appendChild(imgEl);
+    }
+
+    if (m.text) {
+      const textEl = document.createElement('span');
+      textEl.className = 'support-msg-text';
+      textEl.textContent = m.text; // textContent, never innerHTML — see file header
+      wrap.appendChild(textEl);
+    }
 
     if (!grouped) {
       const meta = document.createElement('span');
@@ -315,6 +346,7 @@
     launcher.setAttribute('aria-expanded', 'false');
     backdrop.hidden = true;
     document.body.classList.remove('support-scroll-lock');
+    if (emojiBtn) closeEmoji_();
     launcher.focus();
     schedulePoll();
   }
@@ -350,6 +382,209 @@
     } catch (err) { /* keep whatever's already rendered; next poll will retry */ }
   }
 
+  // ---- image attachment: staging, validation, client-side compression ----
+  const ATTACH_MAX_BYTES = C.support.attachMaxBytes || 3500000;
+  const ATTACH_MAX_DIMENSION = C.support.attachMaxDimension || 1440;
+  const ATTACH_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // keep in sync with apps-script-support.gs's ALLOWED_IMAGE_MIME_TYPES
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) stageFile_(fileInput.files[0]);
+    fileInput.value = ''; // so picking the exact same file twice still fires 'change'
+  });
+
+  // Paste an image directly into the message box.
+  input.addEventListener('paste', e => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && ATTACH_ALLOWED_TYPES.indexOf(items[i].type) !== -1) {
+        e.preventDefault(); // don't also drop garbage image bytes into the text
+        stageFile_(items[i].getAsFile());
+        return;
+      }
+    }
+  });
+
+  // Drag-and-drop anywhere on the open panel.
+  let dragDepth = 0; // dragenter/dragleave can nest over child elements — count them so leave doesn't fire early
+  panel.addEventListener('dragenter', e => {
+    if (!hasFilesInDrag_(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    panel.classList.add('support-panel-dragging');
+  });
+  panel.addEventListener('dragover', e => {
+    if (!hasFilesInDrag_(e)) return;
+    e.preventDefault(); // required to allow a drop at all
+  });
+  panel.addEventListener('dragleave', () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) panel.classList.remove('support-panel-dragging');
+  });
+  panel.addEventListener('drop', e => {
+    if (!hasFilesInDrag_(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    panel.classList.remove('support-panel-dragging');
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) stageFile_(file);
+  });
+
+  function hasFilesInDrag_(e) {
+    return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1;
+  }
+
+  function stageFile_(file) {
+    if (!file) return;
+    if (ATTACH_ALLOWED_TYPES.indexOf(file.type) === -1) {
+      statusEl.className = 'status-msg support-status error';
+      statusEl.textContent = C.support.errorAttachType;
+      return;
+    }
+    // Sanity cap on the ORIGINAL file before we even try to decode/draw
+    // it — an absurdly large source image (e.g. a 100MP photo) is still
+    // expensive to load into a canvas even though the compressed OUTPUT
+    // would be small. 25MB is generous for any real phone/camera photo.
+    if (file.size > 25 * 1024 * 1024) {
+      statusEl.className = 'status-msg support-status error';
+      statusEl.textContent = C.support.errorAttachTooLarge;
+      return;
+    }
+    statusEl.textContent = '';
+    compressImage_(file)
+      .then(result => setAttachment_(result.blob, result.mimeType))
+      .catch(() => {
+        statusEl.className = 'status-msg support-status error';
+        statusEl.textContent = C.support.errorAttachGeneric;
+      });
+  }
+
+  // Resizes to ATTACH_MAX_DIMENSION on the longest side and re-encodes as
+  // JPEG. This is what keeps a typical phone screenshot/photo (often
+  // several MB) well under ATTACH_MAX_BYTES / the server's decoded cap —
+  // shrinking client-side means the upload is faster for the buyer AND
+  // cheaper (bytes, execution time) for the Apps Script backend that
+  // relays it. Always outputting JPEG keeps this simple and predictable;
+  // transparency (rare for a support screenshot) is flattened to white.
+  function compressImage_(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+        if (width <= 0 || height <= 0) { reject(new Error('bad image')); return; }
+        const scale = Math.min(1, ATTACH_MAX_DIMENSION / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; // flatten any transparency onto white before JPEG encoding
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(blob => {
+          if (!blob) { reject(new Error('encode failed')); return; }
+          if (blob.size > ATTACH_MAX_BYTES) {
+            reject(new Error('too large even after compression'));
+            return;
+          }
+          resolve({ blob, mimeType: 'image/jpeg' });
+        }, 'image/jpeg', 0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('decode failed')); };
+      img.src = objectUrl;
+    });
+  }
+
+  function setAttachment_(blob, mimeType) {
+    clearAttachment_(); // revoke any previous preview URL first
+    const previewUrl = URL.createObjectURL(blob);
+    pendingAttachment = { blob, mimeType, previewUrl };
+    attachPreviewImg.src = previewUrl;
+    attachPreview.hidden = false;
+    input.focus();
+  }
+
+  function clearAttachment_() {
+    if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
+    pendingAttachment = null;
+    attachPreview.hidden = true;
+    attachPreviewImg.src = '';
+  }
+
+  attachRemoveBtn.addEventListener('click', clearAttachment_);
+
+  function blobToBase64_(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // ---- emoji picker ----
+  // Built once from config.js -> support.emojis. Inserting at the
+  // textarea's actual cursor position (not just appending) so it behaves
+  // the same whether someone's mid-sentence or starting fresh — matters
+  // most on desktop where people click back into the middle of what
+  // they've typed.
+  let emojiOpen = false;
+  if (emojiBtn && emojiPopover && C.support.emojis && C.support.emojis.length) {
+    C.support.emojis.forEach(emoji => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'support-emoji-option';
+      btn.setAttribute('role', 'menuitem');
+      btn.textContent = emoji;
+      // mousedown (not click) so the textarea never loses focus/selection
+      // first — on a touch device this still fires fine on tap.
+      btn.addEventListener('mousedown', e => e.preventDefault());
+      btn.addEventListener('click', () => insertEmoji_(emoji));
+      emojiPopover.appendChild(btn);
+    });
+
+    emojiBtn.addEventListener('click', () => { emojiOpen ? closeEmoji_() : openEmoji_(); });
+    document.addEventListener('pointerdown', e => {
+      if (!emojiOpen) return;
+      if (emojiPopover.contains(e.target) || emojiBtn.contains(e.target)) return;
+      closeEmoji_();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && emojiOpen) { closeEmoji_(); emojiBtn.focus(); }
+    });
+  }
+
+  function openEmoji_() {
+    emojiOpen = true;
+    emojiPopover.hidden = false;
+    emojiBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeEmoji_() {
+    emojiOpen = false;
+    emojiPopover.hidden = true;
+    emojiBtn.setAttribute('aria-expanded', 'false');
+  }
+  function insertEmoji_(emoji) {
+    const start = input.selectionStart != null ? input.selectionStart : input.value.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : input.value.length;
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+    const caret = start + emoji.length;
+    input.focus();
+    input.setSelectionRange(caret, caret);
+    autoGrow_();
+    updateCharCount_();
+    // Stay open on desktop (mouse users often drop in a few in a row);
+    // close after picking on touch, where the popover eats more of the
+    // limited screen and a second tap to reopen costs little.
+    if (window.matchMedia && window.matchMedia('(pointer:coarse)').matches) closeEmoji_();
+  }
+
   // ---- sending ----
   const CHAR_LIMIT = C.support.charLimit || 1500;
   const CHAR_WARN_AT = Math.round(CHAR_LIMIT * 0.85);
@@ -382,7 +617,8 @@
     e.preventDefault();
     if (sending) return;
     const text = input.value.trim();
-    if (!text) return;
+    const attachment = pendingAttachment; // snapshot — clearAttachment_ below would otherwise revoke its URL out from under us
+    if (!text && !attachment) return;
     if (text.length > CHAR_LIMIT) {
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = C.support.errorTooLong;
@@ -391,6 +627,7 @@
 
     sending = true;
     sendBtn.disabled = true;
+    attachBtn.disabled = true;
     sendBtn.classList.add('support-send-busy');
     sendBtn.setAttribute('aria-label', C.support.sendingLabel || 'Sending…');
     statusEl.className = 'status-msg support-status';
@@ -398,23 +635,58 @@
 
     // Optimistic append so sending feels instant; if the request turns
     // out to have failed, that optimistic bubble is removed again below.
-    const optimistic = { id: 'pending-' + Date.now(), sender: 'user', text: text, createdAt: new Date().toISOString() };
+    // imageUrl here is the buyer's own compressed blob, shown purely
+    // client-side — the server never echoes image bytes back (see
+    // apps-script-support.gs), so this is the only place this preview
+    // ever comes from, including for the bubble that stays on screen
+    // after a successful send.
+    const optimistic = {
+      id: 'pending-' + Date.now(),
+      sender: 'user',
+      text: text,
+      createdAt: new Date().toISOString(),
+      imageUrl: attachment ? attachment.previewUrl : null
+    };
     messages.push(optimistic);
     renderMessages_();
     input.value = '';
     autoGrow_();
     updateCharCount_();
+    if (attachment) { pendingAttachment = null; attachPreview.hidden = true; attachPreviewImg.src = ''; } // detach without revoking — optimistic bubble owns the URL now
 
-    const data = await callApi('send', { text: text });
+    let payload = { text: text };
+    if (attachment) {
+      try {
+        const base64 = await blobToBase64_(attachment.blob);
+        payload.image = { data: base64, mimeType: attachment.mimeType };
+      } catch (err) {
+        URL.revokeObjectURL(attachment.previewUrl);
+        messages = messages.filter(m => m !== optimistic);
+        renderMessages_();
+        sending = false;
+        sendBtn.disabled = false;
+        attachBtn.disabled = false;
+        sendBtn.classList.remove('support-send-busy');
+        statusEl.className = 'status-msg support-status error';
+        statusEl.textContent = C.support.errorAttachGeneric;
+        return;
+      }
+    }
+
+    const data = await callApi('send', payload);
 
     sending = false;
     sendBtn.disabled = false;
+    attachBtn.disabled = false;
     sendBtn.classList.remove('support-send-busy');
     sendBtn.setAttribute('aria-label', C.support.sendLabel || 'Send message');
 
     if (data.ok && data.message) {
       const idx = messages.indexOf(optimistic);
       if (idx !== -1) messages.splice(idx, 1); // drop the optimistic placeholder
+      // Carry the local image preview over onto the server's message
+      // record — the server itself never returns image bytes.
+      if (attachment) data.message.imageUrl = optimistic.imageUrl;
       // If a background poll already pulled in this exact message (same
       // id) while this request was in flight, don't add a second copy.
       if (!messages.some(m => m.id === data.message.id)) {
@@ -425,11 +697,13 @@
       lastReadAt = lastSeen; // it's the buyer's own message — obviously already "read"
       renderMessages_();
     } else {
+      if (attachment) URL.revokeObjectURL(attachment.previewUrl);
       messages = messages.filter(m => m !== optimistic);
       renderMessages_();
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = data.error || C.support.errorGeneric;
       input.value = text; // hand the text back so nothing typed is lost
+      if (attachment) setAttachment_(attachment.blob, attachment.mimeType); // give the image back too
       autoGrow_();
       updateCharCount_();
     }
@@ -464,6 +738,8 @@
     statusEl.textContent = '';
     input.value = '';
     charCountEl.hidden = true;
+    clearAttachment_(); // don't carry a staged image over to whoever logs in next on a shared computer
+    if (emojiBtn) closeEmoji_();
     clearTimeout(pollTimer);
   }
 

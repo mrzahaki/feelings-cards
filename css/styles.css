@@ -1405,6 +1405,11 @@
     from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}
   }
   .support-msg-text{display:block; white-space:pre-wrap; word-break:break-word;}
+  .support-msg-img{
+    display:block; max-width:100%; max-height:220px;
+    border-radius:10px; object-fit:cover;
+  }
+  .support-msg-img + .support-msg-text{margin-top:6px;}
   .support-msg-user{
     align-self:flex-end;
     background:linear-gradient(135deg, var(--brown) 0%, var(--brown-deep) 100%);
@@ -1506,6 +1511,99 @@
   }
 
   .support-status{padding:0 16px 12px; margin:0; flex:none;}
+
+  /* ---- image attachment: staged preview above the composer ---- */
+  .support-attach-preview{
+    display:flex; align-items:center; gap:10px;
+    margin:0 14px 10px; padding:8px; flex:none;
+    background:var(--bg); border:1px solid var(--line); border-radius:14px;
+  }
+  .support-attach-preview[hidden]{display:none;}
+  .support-attach-preview img{
+    width:48px; height:48px; object-fit:cover; border-radius:9px; flex:none;
+  }
+  .support-attach-remove{
+    margin-left:auto; flex:none;
+    width:28px; height:28px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--paper); border:1px solid var(--line); border-radius:50%;
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .support-attach-remove svg{width:14px; height:14px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-attach-remove:hover{color:var(--ink); border-color:var(--brown);}
+  }
+
+  /* ---- composer tool buttons: attach + emoji ---- */
+  .support-composer-tools{display:flex; align-items:flex-end; gap:2px; flex:none;}
+  .support-tool-btn{
+    flex:none; width:40px; height:44px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:none; border:none; color:var(--ink-soft); cursor:pointer;
+    border-radius:12px; transition:color .12s ease, background .12s ease;
+  }
+  .support-tool-btn svg{width:20px; height:20px;}
+  @media (hover:hover) and (pointer:fine){
+    .support-tool-btn:hover{color:var(--brown-deep); background:var(--bg);}
+  }
+  .support-tool-btn:active{background:var(--bg);}
+  .support-tool-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .support-tool-btn[aria-expanded="true"]{color:var(--brown-deep); background:var(--bg);}
+
+  /* ---- emoji picker ---- */
+  .support-emoji-wrap{position:relative;}
+  .support-emoji-popover{
+    position:absolute; left:0; bottom:calc(100% + 8px); z-index:5;
+    /* Clamped so it can never overflow a narrow phone viewport — anchored
+       to the button itself rather than repositioned into a separate
+       full-width bar, which keeps the positioning math simple and
+       reliable at every breakpoint instead of depending on which
+       ancestor happens to be the containing block. */
+    width:min(236px, calc(100vw - 56px));
+    max-height:min(210px, 40vh); overflow-y:auto;
+    display:grid; grid-template-columns:repeat(6, 1fr); gap:2px;
+    padding:8px; background:var(--paper); border:1px solid var(--line);
+    border-radius:16px; box-shadow:0 14px 30px -10px rgba(0,0,0,.28);
+    animation:support-pop-in .16s cubic-bezier(.2,.8,.25,1.15);
+  }
+  .support-emoji-popover[hidden]{display:none;}
+  .support-emoji-option{
+    width:100%; aspect-ratio:1; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.15rem; line-height:1; background:none; border:none;
+    border-radius:9px; cursor:pointer;
+  }
+  @media (hover:hover) and (pointer:fine){
+    .support-emoji-option:hover{background:var(--bg);}
+  }
+  .support-emoji-option:active{background:var(--bg); transform:scale(.92);}
+
+  /* ---- drag-and-drop overlay, shown only while dragging a file over the panel ---- */
+  .support-drop-hint{
+    position:absolute; inset:0; z-index:2;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.92);
+    border:2px dashed var(--brown);
+    border-radius:inherit;
+    font-family:'Quicksand', sans-serif; font-weight:700; color:var(--brown-deep);
+    pointer-events:none;
+  }
+  .support-panel-dragging .support-drop-hint{display:flex;}
+
+  /* ---- touch vs. mouse target sizing ----
+     (pointer:coarse) catches touchscreens (including hybrid laptops
+     where touch isn't necessarily the *primary* pointer) and bumps up
+     anything meant to be tapped, per common ~44px touch-target guidance
+     — mouse/trackpad users keep the tighter default sizing above. */
+  @media (pointer:coarse){
+    .support-tool-btn{width:46px; height:46px;}
+    .support-emoji-option{font-size:1.3rem;}
+    .support-send{width:48px; height:48px;}
+    .support-attach-remove{width:32px; height:32px;}
+    .support-close{width:40px; height:40px;}
+    .support-chip{padding:10px 14px;}
+    .support-scroll-latest{padding:10px 16px 10px 12px;}
+  }
 
   /* Prevent the page from scrolling behind an open mobile sheet. */
   body.support-scroll-lock{overflow:hidden;}

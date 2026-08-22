@@ -148,5 +148,16 @@
     }
     set('supportSendLabel', C.support.sendLabel);
     set('supportScrollLatestLabel', C.support.scrollToLatestLabel);
+
+    const attachBtn = document.getElementById('supportAttachBtn');
+    if (attachBtn) attachBtn.setAttribute('aria-label', C.support.attachAriaLabel || C.support.attachLabel);
+    const attachRemove = document.getElementById('supportAttachRemove');
+    if (attachRemove) attachRemove.setAttribute('aria-label', C.support.attachRemoveLabel);
+    set('supportDropHintLabel', C.support.attachDropHint);
+
+    const emojiBtn = document.getElementById('supportEmojiBtn');
+    if (emojiBtn) emojiBtn.setAttribute('aria-label', C.support.emojiAriaLabel || C.support.emojiLabel);
+    const emojiPopover = document.getElementById('supportEmojiPopover');
+    if (emojiPopover) emojiPopover.setAttribute('aria-label', C.support.emojiPopoverLabel || C.support.emojiLabel);
   }
 })();
