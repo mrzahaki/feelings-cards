@@ -46,7 +46,13 @@
 
   let messages = [];       // in-memory only — see file header
   let lastSeen = '';       // ISO timestamp of the newest message we've ever fetched (poll cursor)
-  let lastReadAt = '';     // ISO timestamp of the newest message the buyer has actually SEEN (badge cursor)
+  // lastReadAt is the badge cursor. It's seeded from the SERVER on every
+  // load (see loadHistory_) rather than assumed — the server persists it
+  // per account (SupportReadState sheet in apps-script-support.gs), so a
+  // buyer who goes offline, comes back later, and refreshes still sees an
+  // accurate unread count instead of the badge silently resetting to 0
+  // just because this tab's in-memory state is fresh.
+  let lastReadAt = '';
   let unread = 0;
   let isOpen = false;
   let sending = false;
@@ -282,12 +288,16 @@
       backdrop.hidden = false;
       document.body.classList.add('support-scroll-lock');
     }
-    lastReadAt = lastSeen || new Date().toISOString();
+    // Zero the badge immediately for a snappy feel. loadHistory_({markRead:
+    // true}) below persists "read up to now" to the server as part of the
+    // very same request that refreshes history — no separate round trip —
+    // so a later refresh, relogin, or a second device still reflects this
+    // accurately instead of only ever resetting the badge in this tab.
     setUnread_(0);
     renderMessages_();
     // First open (or reopen): make sure we have the full thread, not
     // just whatever's trickled in since the last background poll.
-    loadHistory_();
+    loadHistory_({ markRead: true });
     input.focus();
     schedulePoll();
   }
@@ -309,18 +319,24 @@
     if (e.key === 'Escape' && isOpen) closePanel();
   });
 
+  // opts.markRead (bool): piggyback "mark read up to now" onto this same
+  // request instead of firing a second call — pass true only when the
+  // buyer is actually opening the panel (see openPanel), never on a
+  // silent background/boot load, or a message they haven't looked at yet
+  // would get marked read without them ever seeing it.
   async function loadHistory_(opts) {
     opts = opts || {};
     try {
-      const data = await callApi('poll', { since: '' });
+      const data = await callApi('poll', { since: '', markRead: !!opts.markRead });
       if (data.ok && data.messages) {
         messages = data.messages;
         if (messages.length) lastSeen = messages[messages.length - 1].createdAt;
-        // Silent boot load (widget still closed): treat existing history
-        // as already "read" so it doesn't retroactively count as unread
-        // the moment the first background poll runs — only genuinely new
-        // arrivals from this point on should ever move the badge.
-        if (opts.silent) lastReadAt = lastSeen;
+        // Trust the server's persisted read cursor over any local guess —
+        // it's per-account (not per-tab/per-session), so this is what
+        // makes the badge survive a refresh, a new tab, going offline and
+        // back, etc. and still show the real unread count. See
+        // apps-script-support.gs's SupportReadState / handlePoll_.
+        if (typeof data.lastReadAt === 'string') lastReadAt = data.lastReadAt;
         if (isOpen) renderMessages_();
         recomputeUnread_();
       }
@@ -447,10 +463,13 @@
   window.Account.onChange(state => {
     if (state.loggedIn) {
       launcher.hidden = false;
-      // Seed history silently so the badge reflects only genuinely new
-      // arrivals from here on, not the buyer's entire past thread —
-      // see loadHistory_'s `silent` handling.
-      loadHistory_({ silent: true });
+      // Not markRead: this is a background/boot load, not the buyer
+      // actually opening and looking at the panel. lastReadAt comes back
+      // from the server as whatever it was last set to (possibly on a
+      // different device/session, possibly never) — see loadHistory_ —
+      // so the badge reflects true unread state, including messages that
+      // arrived while they were away.
+      loadHistory_();
       schedulePoll();
     } else {
       launcher.hidden = true;
@@ -463,7 +482,7 @@
   // rather than waiting only on the next onChange firing.
   if (window.Account.isLoggedIn()) {
     launcher.hidden = false;
-    loadHistory_({ silent: true });
+    loadHistory_();
     schedulePoll();
   }
 })();
