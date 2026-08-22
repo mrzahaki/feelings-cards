@@ -1481,7 +1481,8 @@
   }
   .support-msg-img + .support-msg-text,
   .support-msg-video + .support-msg-text,
-  .support-msg-file-chip + .support-msg-text{margin-top:6px;}
+  .support-msg-file-chip + .support-msg-text,
+  .support-msg-attachments + .support-msg-text{margin-top:6px;}
   .support-msg-file-chip{
     display:flex; align-items:center; gap:8px;
     padding:8px 10px; border-radius:10px;
@@ -1605,40 +1606,53 @@
 
   .support-status{padding:0 16px 12px; margin:0; flex:none;}
 
-  /* ---- image attachment: staged preview above the composer ---- */
+  /* ---- attachments: staged preview row above the composer ----
+     One .support-attach-chip per staged file (up to a few at once —
+     see support.js's ATTACH_MAX_COUNT), wrapping onto more than one row
+     if needed rather than overflowing the panel. */
   .support-attach-preview{
-    display:flex; align-items:center; gap:10px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
     margin:0 14px 10px; padding:8px; flex:none;
     background:var(--bg); border:1px solid var(--line); border-radius:14px;
   }
   .support-attach-preview[hidden]{display:none;}
-  .support-attach-preview img,
+  .support-attach-chip{
+    position:relative; display:flex; align-items:center; gap:6px;
+    max-width:200px; padding:4px; flex:none;
+    background:var(--paper); border:1px solid var(--line); border-radius:11px;
+  }
+  .support-attach-chip img,
   .support-attach-preview-video{
-    width:48px; height:48px; object-fit:cover; border-radius:9px; flex:none;
+    width:40px; height:40px; object-fit:cover; border-radius:8px; flex:none;
     background:#000;
   }
-  .support-attach-file-chip{
-    display:flex; align-items:center; gap:8px; min-width:0; flex:1;
+  .support-attach-chip-file{
+    display:flex; align-items:center; gap:6px; min-width:0; padding:0 4px;
   }
   .support-attach-file-icon{
-    flex:none; width:36px; height:36px; border-radius:9px;
-    background:var(--paper); border:1px solid var(--line);
-    display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+    flex:none; width:32px; height:32px; border-radius:8px;
+    background:var(--bg); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:.95rem;
   }
   .support-attach-file-name{
-    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-size:.9rem; color:var(--ink);
+    min-width:0; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:.82rem; color:var(--ink);
   }
   .support-attach-remove{
-    margin-left:auto; flex:none;
-    width:28px; height:28px; padding:0;
+    flex:none;
+    width:24px; height:24px; padding:0;
     display:flex; align-items:center; justify-content:center;
     background:var(--paper); border:1px solid var(--line); border-radius:50%;
     color:var(--ink-soft); cursor:pointer;
   }
-  .support-attach-remove svg{width:14px; height:14px;}
+  .support-attach-remove svg{width:12px; height:12px;}
   @media (hover:hover) and (pointer:fine){
     .support-attach-remove:hover{color:var(--ink); border-color:var(--brown);}
+  }
+
+  /* ---- multiple attachments on one sent/received message bubble ---- */
+  .support-msg-attachments{
+    display:flex; flex-wrap:wrap; gap:6px;
   }
 
   /* ---- composer tool buttons: attach + emoji ---- */

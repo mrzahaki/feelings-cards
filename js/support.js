@@ -47,12 +47,11 @@
   const statusEl = document.getElementById('supportStatus');
   const attachBtn = document.getElementById('supportAttachBtn');
   const fileInput = document.getElementById('supportFileInput');
+  // supportAttachPreview is an empty container now — one chip per staged
+  // attachment (with its own thumbnail/name and remove button) is built
+  // and torn down dynamically in renderAttachmentChips_ below, since a
+  // message can carry more than one file.
   const attachPreview = document.getElementById('supportAttachPreview');
-  const attachPreviewImg = document.getElementById('supportAttachPreviewImg');
-  const attachPreviewVideo = document.getElementById('supportAttachPreviewVideo');
-  const attachFileChip = document.getElementById('supportAttachFileChip');
-  const attachFileName = document.getElementById('supportAttachFileName');
-  const attachRemoveBtn = document.getElementById('supportAttachRemove');
   const dropHint = document.getElementById('supportDropHint');
   const emojiBtn = document.getElementById('supportEmojiBtn');
   const emojiPopover = document.getElementById('supportEmojiPopover');
@@ -71,15 +70,15 @@
   let isOpen = false;
   let sending = false;
 
-  // ---- staged attachment (paste / drag-drop / file picker) ----
-  // { blob, mimeType, previewUrl, kind, fileName } or null, where kind is
+  // ---- staged attachments (paste / drag-drop / file picker) ----
+  // Array of { blob, mimeType, previewUrl, kind, fileName }, where kind is
   // 'image' | 'video' | 'file'. previewUrl is only set for image/video
   // (an object URL the browser can render directly); a generic file just
-  // shows its name. Only ever holds ONE attachment at a time (kept
-  // simple), and only exists client-side until send — support.js never
+  // shows its name. Holds up to ATTACH_MAX_COUNT attachments for the next
+  // message, and only exists client-side until send — support.js never
   // persists it, and the server never persists it either (see
   // apps-script-support.gs's constants block).
-  let pendingAttachment = null;
+  let pendingAttachments = [];
 
   // ---- polling ----
   // Open + focused: poll often for a responsive feel. Closed (but still
@@ -252,38 +251,46 @@
     wrap.className = 'support-msg ' + (m.sender === 'user' ? 'support-msg-user' : 'support-msg-support') + (grouped ? ' support-msg-grouped' : '');
     if (String(m.id).indexOf('pending-') === 0) wrap.classList.add('support-msg-pending');
 
-    // attachmentUrl/attachmentKind only ever exist in this tab's own
-    // memory (an object URL over the buyer's own blob) — the server
-    // never sends attachment bytes back, so a message loaded fresh from
-    // poll/history (e.g. after a refresh) has neither and just shows its
-    // stored text placeholder instead. See apps-script-support.gs's
-    // constants block for why attachments aren't persisted server-side.
-    if (m.attachmentKind === 'image' && m.attachmentUrl) {
-      const imgEl = document.createElement('img');
-      imgEl.className = 'support-msg-img';
-      imgEl.src = m.attachmentUrl;
-      imgEl.alt = 'Image attached to message';
-      wrap.appendChild(imgEl);
-    } else if (m.attachmentKind === 'video' && m.attachmentUrl) {
-      const videoEl = document.createElement('video');
-      videoEl.className = 'support-msg-video';
-      videoEl.src = m.attachmentUrl;
-      videoEl.controls = true;
-      videoEl.setAttribute('aria-label', 'Video attached to message');
-      wrap.appendChild(videoEl);
-    } else if (m.attachmentKind === 'file' && m.attachmentName) {
-      const chip = document.createElement('span');
-      chip.className = 'support-msg-file-chip';
-      const icon = document.createElement('span');
-      icon.className = 'support-attach-file-icon';
-      icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = '📎';
-      const name = document.createElement('span');
-      name.className = 'support-attach-file-name';
-      name.textContent = m.attachmentName;
-      chip.appendChild(icon);
-      chip.appendChild(name);
-      wrap.appendChild(chip);
+    // m.attachments[].url only ever exists in this tab's own memory (an
+    // object URL over the buyer's own blob) — the server never sends
+    // attachment bytes back, so a message loaded fresh from poll/history
+    // (e.g. after a refresh) has no attachments array at all and just
+    // shows its stored text placeholder instead. See
+    // apps-script-support.gs's constants block for why attachments
+    // aren't persisted server-side. A message can carry several.
+    if (m.attachments && m.attachments.length) {
+      const attWrap = document.createElement('div');
+      attWrap.className = 'support-msg-attachments';
+      m.attachments.forEach(att => {
+        if (att.kind === 'image' && att.url) {
+          const imgEl = document.createElement('img');
+          imgEl.className = 'support-msg-img';
+          imgEl.src = att.url;
+          imgEl.alt = 'Image attached to message';
+          attWrap.appendChild(imgEl);
+        } else if (att.kind === 'video' && att.url) {
+          const videoEl = document.createElement('video');
+          videoEl.className = 'support-msg-video';
+          videoEl.src = att.url;
+          videoEl.controls = true;
+          videoEl.setAttribute('aria-label', 'Video attached to message');
+          attWrap.appendChild(videoEl);
+        } else if (att.kind === 'file' && att.name) {
+          const chip = document.createElement('span');
+          chip.className = 'support-msg-file-chip';
+          const icon = document.createElement('span');
+          icon.className = 'support-attach-file-icon';
+          icon.setAttribute('aria-hidden', 'true');
+          icon.textContent = '📎';
+          const name = document.createElement('span');
+          name.className = 'support-attach-file-name';
+          name.textContent = att.name;
+          chip.appendChild(icon);
+          chip.appendChild(name);
+          attWrap.appendChild(chip);
+        }
+      });
+      wrap.appendChild(attWrap);
     }
 
     if (m.text) {
@@ -652,6 +659,16 @@
   const ATTACH_MAX_BYTES_VIDEO = C.support.attachMaxBytesVideo || 15000000;
   const ATTACH_MAX_BYTES_DOC = C.support.attachMaxBytesDoc || 8000000;
   const ATTACH_MAX_DIMENSION = C.support.attachMaxDimension || 1440;
+  // How many files one message can carry, and a combined-size ceiling on
+  // top of the per-file caps above — both must stay in sync with
+  // apps-script-support.gs's MAX_ATTACHMENTS_PER_MESSAGE /
+  // MAX_TOTAL_ATTACHMENT_BYTES. This is purely a fast, friendly
+  // client-side check: the server enforces the same limits itself and
+  // never trusts this one, since a request can always be sent by
+  // something other than this exact script.
+  const ATTACH_MAX_COUNT = C.support.attachMaxCount || 4;
+  const ATTACH_MAX_VIDEOS = C.support.attachMaxVideos || 1;
+  const ATTACH_MAX_BYTES_TOTAL = C.support.attachMaxBytesTotal || 20000000;
 
   function categoryForType_(mimeType) {
     if (ATTACH_IMAGE_TYPES.indexOf(mimeType) !== -1) return 'image';
@@ -660,29 +677,43 @@
     return null;
   }
 
+  function pendingBytesTotal_() {
+    return pendingAttachments.reduce((sum, a) => sum + a.blob.size, 0);
+  }
+  function pendingVideoCount_() {
+    return pendingAttachments.reduce((n, a) => n + (a.kind === 'video' ? 1 : 0), 0);
+  }
+
   attachBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) stageFile_(fileInput.files[0]);
-    fileInput.value = ''; // so picking the exact same file twice still fires 'change'
+    if (fileInput.files && fileInput.files.length) stageFiles_(fileInput.files);
+    fileInput.value = ''; // so picking the exact same file(s) again still fires 'change'
   });
 
-  // Paste an image directly into the message box. Only images (not
+  // Paste image(s) directly into the message box. Only images (not
   // video/documents) are wired up for paste — that's the one clipboard
   // interaction browsers actually support well, and it matches what
-  // people expect from pasting a screenshot.
+  // people expect from pasting a screenshot. A paste can carry more than
+  // one image (e.g. copying several files from a file manager), so every
+  // image item is collected and staged together as one batch.
   input.addEventListener('paste', e => {
     const items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
+    const files = [];
     for (let i = 0; i < items.length; i++) {
       if (items[i].kind === 'file' && ATTACH_IMAGE_TYPES.indexOf(items[i].type) !== -1) {
-        e.preventDefault(); // don't also drop garbage image bytes into the text
-        stageFile_(items[i].getAsFile());
-        return;
+        files.push(items[i].getAsFile());
       }
+    }
+    if (files.length) {
+      e.preventDefault(); // don't also drop garbage image bytes into the text
+      stageFiles_(files);
     }
   });
 
-  // Drag-and-drop anywhere on the open panel.
+  // Drag-and-drop anywhere on the open panel — dropping a multi-file
+  // selection stages all of them as one batch (subject to the same
+  // count/size checks as picking them from the file dialog).
   let dragDepth = 0; // dragenter/dragleave can nest over child elements — count them so leave doesn't fire early
   panel.addEventListener('dragenter', e => {
     if (!hasFilesInDrag_(e)) return;
@@ -703,55 +734,130 @@
     e.preventDefault();
     dragDepth = 0;
     panel.classList.remove('support-panel-dragging');
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) stageFile_(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) stageFiles_(e.dataTransfer.files);
   });
 
   function hasFilesInDrag_(e) {
     return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1;
   }
 
-  function stageFile_(file) {
-    if (!file) return;
-    const category = categoryForType_(file.type);
-    if (!category) {
+  // Stages a batch of files (from the picker, a drop, or a multi-image
+  // paste) as new pending attachments, on top of whatever's already
+  // staged. Enforces the per-message count/video/combined-size caps up
+  // front — before any file is read or compressed — and, if the batch
+  // would push past a cap, stages as many as still fit and reports a
+  // single short error for the rest rather than silently dropping them
+  // or accepting an unbounded pile of files.
+  function stageFiles_(fileList) {
+    const incoming = Array.from(fileList || []);
+    if (!incoming.length) return;
+
+    const availableSlots = ATTACH_MAX_COUNT - pendingAttachments.length;
+    if (availableSlots <= 0) {
       statusEl.className = 'status-msg support-status error';
-      statusEl.textContent = C.support.errorAttachType;
+      statusEl.textContent = attachErrorTooMany_();
       return;
     }
 
-    if (category === 'image') {
-      // Sanity cap on the ORIGINAL file before we even try to decode/draw
-      // it — an absurdly large source image (e.g. a 100MP photo) is still
-      // expensive to load into a canvas even though the compressed OUTPUT
-      // would be small. 25MB is generous for any real phone/camera photo.
-      if (file.size > 25 * 1024 * 1024) {
-        statusEl.className = 'status-msg support-status error';
-        statusEl.textContent = C.support.errorAttachTooLarge;
-        return;
-      }
-      statusEl.textContent = '';
-      compressImage_(file)
-        .then(result => setAttachment_(result.blob, result.mimeType, 'image', file.name))
-        .catch(() => {
+    const toProcess = incoming.slice(0, availableSlots);
+    const overflow = incoming.length - toProcess.length;
+
+    let runningBytes = pendingBytesTotal_();
+    let runningVideos = pendingVideoCount_();
+    let skippedForLimits = 0;
+
+    // Validate/stage sequentially (rather than in parallel) so the
+    // running byte/video totals used for the combined-size and
+    // one-video caps are checked against every file staged so far,
+    // including ones earlier in this same batch — not just what was
+    // already pending before this call started.
+    let chain = Promise.resolve();
+    toProcess.forEach(file => {
+      chain = chain.then(() => {
+        const category = categoryForType_(file.type);
+        if (!category) {
           statusEl.className = 'status-msg support-status error';
-          statusEl.textContent = C.support.errorAttachGeneric;
-        });
-      return;
-    }
+          statusEl.textContent = C.support.errorAttachType;
+          skippedForLimits++;
+          return;
+        }
+        if (category === 'video' && runningVideos + 1 > ATTACH_MAX_VIDEOS) {
+          statusEl.className = 'status-msg support-status error';
+          statusEl.textContent = C.support.errorAttachTooManyVideos || ('Only ' + ATTACH_MAX_VIDEOS + ' video per message, please.');
+          skippedForLimits++;
+          return;
+        }
 
-    // Video and documents can't be shrunk client-side the way images
-    // can, so they're just checked directly against their category's cap
-    // and either staged as-is or rejected — nothing about the file is
-    // read, decoded, or transformed until the buyer actually hits send.
-    const maxBytes = category === 'video' ? ATTACH_MAX_BYTES_VIDEO : ATTACH_MAX_BYTES_DOC;
-    if (file.size > maxBytes) {
-      statusEl.className = 'status-msg support-status error';
-      statusEl.textContent = category === 'video' ? C.support.errorAttachTooLargeVideo : C.support.errorAttachTooLargeDoc;
-      return;
-    }
-    statusEl.textContent = '';
-    setAttachment_(file, file.type, category, file.name);
+        if (category === 'image') {
+          // Sanity cap on the ORIGINAL file before decode/draw — an
+          // absurdly large source image (e.g. a 100MP photo) is still
+          // expensive to load into a canvas even though the compressed
+          // OUTPUT would be small. 25MB is generous for any real
+          // phone/camera photo.
+          if (file.size > 25 * 1024 * 1024) {
+            statusEl.className = 'status-msg support-status error';
+            statusEl.textContent = C.support.errorAttachTooLarge;
+            skippedForLimits++;
+            return;
+          }
+          return compressImage_(file).then(result => {
+            if (runningBytes + result.blob.size > ATTACH_MAX_BYTES_TOTAL) {
+              statusEl.className = 'status-msg support-status error';
+              statusEl.textContent = attachErrorTooLargeCombined_();
+              skippedForLimits++;
+              return;
+            }
+            runningBytes += result.blob.size;
+            addAttachment_(result.blob, result.mimeType, 'image', file.name);
+          }).catch(() => {
+            statusEl.className = 'status-msg support-status error';
+            statusEl.textContent = C.support.errorAttachGeneric;
+            skippedForLimits++;
+          });
+        }
+
+        // Video and documents can't be shrunk client-side the way images
+        // can, so they're just checked directly against their category's
+        // cap and either staged as-is or rejected — nothing about the
+        // file is read, decoded, or transformed until the buyer actually
+        // hits send.
+        const maxBytes = category === 'video' ? ATTACH_MAX_BYTES_VIDEO : ATTACH_MAX_BYTES_DOC;
+        if (file.size > maxBytes) {
+          statusEl.className = 'status-msg support-status error';
+          statusEl.textContent = category === 'video' ? C.support.errorAttachTooLargeVideo : C.support.errorAttachTooLargeDoc;
+          skippedForLimits++;
+          return;
+        }
+        if (runningBytes + file.size > ATTACH_MAX_BYTES_TOTAL) {
+          statusEl.className = 'status-msg support-status error';
+          statusEl.textContent = attachErrorTooLargeCombined_();
+          skippedForLimits++;
+          return;
+        }
+        runningBytes += file.size;
+        if (category === 'video') runningVideos++;
+        addAttachment_(file, file.type, category, file.name);
+      });
+    });
+
+    chain.then(() => {
+      // A clean, successful batch (nothing skipped, nothing left over
+      // from the count cap) clears any earlier error rather than leaving
+      // a stale one on screen.
+      if (overflow > 0) {
+        statusEl.className = 'status-msg support-status error';
+        statusEl.textContent = attachErrorTooMany_();
+      } else if (!skippedForLimits) {
+        statusEl.textContent = '';
+      }
+    });
+  }
+
+  function attachErrorTooMany_() {
+    return (C.support.errorAttachTooMany || 'You can attach up to {max} files per message.').replace('{max}', ATTACH_MAX_COUNT);
+  }
+  function attachErrorTooLargeCombined_() {
+    return (C.support.errorAttachTooLargeCombined || 'Those files are too large combined (max ~{max}MB total per message).').replace('{max}', Math.floor(ATTACH_MAX_BYTES_TOTAL / 1e6));
   }
 
   // Resizes to ATTACH_MAX_DIMENSION on the longest side and re-encodes as
@@ -795,45 +901,80 @@
     });
   }
 
-  function setAttachment_(blob, mimeType, kind, fileName) {
-    clearAttachment_(); // revoke any previous preview URL first
-    // Only image/video are things a browser can render straight from an
-    // object URL; a generic document just shows its name instead.
+  // Only image/video are things a browser can render straight from an
+  // object URL; a generic document just shows its name instead.
+  function addAttachment_(blob, mimeType, kind, fileName) {
     const previewUrl = (kind === 'image' || kind === 'video') ? URL.createObjectURL(blob) : null;
-    pendingAttachment = { blob, mimeType, previewUrl, kind, fileName: fileName || 'attachment' };
-
-    attachPreviewImg.hidden = true;
-    attachPreviewVideo.hidden = true;
-    attachFileChip.hidden = true;
-
-    if (kind === 'image') {
-      attachPreviewImg.src = previewUrl;
-      attachPreviewImg.hidden = false;
-    } else if (kind === 'video') {
-      attachPreviewVideo.src = previewUrl;
-      attachPreviewVideo.hidden = false;
-    } else {
-      attachFileName.textContent = pendingAttachment.fileName;
-      attachFileChip.hidden = false;
-    }
-
-    attachPreview.hidden = false;
+    pendingAttachments.push({ blob, mimeType, previewUrl, kind, fileName: fileName || 'attachment' });
+    renderAttachmentChips_();
     input.focus();
   }
 
-  function clearAttachment_() {
-    if (pendingAttachment && pendingAttachment.previewUrl) URL.revokeObjectURL(pendingAttachment.previewUrl);
-    pendingAttachment = null;
-    attachPreview.hidden = true;
-    attachPreviewImg.hidden = true;
-    attachPreviewImg.src = '';
-    attachPreviewVideo.hidden = true;
-    attachPreviewVideo.src = '';
-    attachFileChip.hidden = true;
-    attachFileName.textContent = '';
+  function removeAttachmentAt_(index) {
+    const att = pendingAttachments[index];
+    if (!att) return;
+    if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+    pendingAttachments.splice(index, 1);
+    renderAttachmentChips_();
   }
 
-  attachRemoveBtn.addEventListener('click', clearAttachment_);
+  function clearAttachments_() {
+    pendingAttachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
+    pendingAttachments = [];
+    renderAttachmentChips_();
+  }
+
+  // Rebuilds the staged-attachment preview row from scratch to match
+  // pendingAttachments — simple and cheap enough given how rarely this
+  // runs (a handful of adds/removes before hitting send, never on every
+  // keystroke). Every filename is set via textContent, never innerHTML,
+  // so a maliciously-named file can't inject markup into the composer.
+  function renderAttachmentChips_() {
+    attachPreview.innerHTML = '';
+    attachPreview.hidden = pendingAttachments.length === 0;
+
+    pendingAttachments.forEach((att, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'support-attach-chip';
+
+      if (att.kind === 'image') {
+        const img = document.createElement('img');
+        img.src = att.previewUrl;
+        img.alt = 'Image attached to your message';
+        chip.appendChild(img);
+      } else if (att.kind === 'video') {
+        const video = document.createElement('video');
+        video.className = 'support-attach-preview-video';
+        video.src = att.previewUrl;
+        video.muted = true;
+        video.playsInline = true;
+        chip.appendChild(video);
+      } else {
+        const fileChip = document.createElement('span');
+        fileChip.className = 'support-attach-chip-file';
+        const icon = document.createElement('span');
+        icon.className = 'support-attach-file-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '📎';
+        const name = document.createElement('span');
+        name.className = 'support-attach-file-name';
+        name.textContent = att.fileName;
+        fileChip.appendChild(icon);
+        fileChip.appendChild(name);
+        chip.appendChild(fileChip);
+      }
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'support-attach-remove';
+      removeBtn.setAttribute('aria-label', ((C.support.attachRemoveLabel || 'Remove attachment') + ': ' + att.fileName));
+      removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      removeBtn.addEventListener('click', () => removeAttachmentAt_(i));
+      chip.appendChild(removeBtn);
+
+      attachPreview.appendChild(chip);
+    });
+  }
 
   function blobToBase64_(blob) {
     return new Promise((resolve, reject) => {
@@ -933,8 +1074,8 @@
     e.preventDefault();
     if (sending) return;
     const text = input.value.trim();
-    const attachment = pendingAttachment; // snapshot — clearAttachment_ below would otherwise revoke its URL out from under us
-    if (!text && !attachment) return;
+    const attachments = pendingAttachments; // snapshot — clearAttachments_ below would otherwise revoke these URLs out from under us
+    if (!text && !attachments.length) return;
     if (text.length > CHAR_LIMIT) {
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = C.support.errorTooLong;
@@ -951,35 +1092,36 @@
 
     // Optimistic append so sending feels instant; if the request turns
     // out to have failed, that optimistic bubble is removed again below.
-    // attachmentUrl here is the buyer's own blob (compressed, for
+    // Each attachment's url here is the buyer's own blob (compressed, for
     // images), shown purely client-side — the server never echoes
     // attachment bytes back (see apps-script-support.gs), so this is the
     // only place this preview ever comes from, including for the bubble
     // that stays on screen after a successful send. Documents have no
-    // previewUrl (nothing to render inline), so they just carry a name.
+    // url (nothing to render inline), so they just carry a name.
+    const optimisticAttachments = attachments.map(a => ({ kind: a.kind, url: a.previewUrl, name: a.fileName }));
     const optimistic = {
       id: 'pending-' + Date.now(),
       sender: 'user',
       text: text,
       createdAt: new Date().toISOString(),
-      attachmentKind: attachment ? attachment.kind : null,
-      attachmentUrl: attachment ? attachment.previewUrl : null,
-      attachmentName: attachment ? attachment.fileName : null
+      attachments: optimisticAttachments
     };
     messages.push(optimistic);
     renderMessages_();
     input.value = '';
     autoGrow_();
     updateCharCount_();
-    if (attachment) { pendingAttachment = null; attachPreview.hidden = true; attachPreviewImg.src = ''; attachPreviewVideo.src = ''; } // detach without revoking — optimistic bubble owns the URL now
+    if (attachments.length) { pendingAttachments = []; renderAttachmentChips_(); } // detach without revoking — optimistic bubble owns the URLs now
 
     let payload = { text: text };
-    if (attachment) {
+    if (attachments.length) {
       try {
-        const base64 = await blobToBase64_(attachment.blob);
-        payload.attachment = { data: base64, mimeType: attachment.mimeType, fileName: attachment.fileName };
+        const encoded = await Promise.all(attachments.map(async a => ({
+          data: await blobToBase64_(a.blob), mimeType: a.mimeType, fileName: a.fileName
+        })));
+        payload.attachments = encoded;
       } catch (err) {
-        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+        attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
         messages = messages.filter(m => m !== optimistic);
         renderMessages_();
         sending = false;
@@ -1003,12 +1145,10 @@
     if (data.ok && data.message) {
       const idx = messages.indexOf(optimistic);
       if (idx !== -1) messages.splice(idx, 1); // drop the optimistic placeholder
-      // Carry the local attachment preview over onto the server's message
-      // record — the server itself never returns attachment bytes.
-      if (attachment) {
-        data.message.attachmentKind = optimistic.attachmentKind;
-        data.message.attachmentUrl = optimistic.attachmentUrl;
-        data.message.attachmentName = optimistic.attachmentName;
+      // Carry the local attachment previews over onto the server's
+      // message record — the server itself never returns attachment bytes.
+      if (attachments.length) {
+        data.message.attachments = optimisticAttachments;
       }
       // If a background poll already pulled in this exact message (same
       // id) while this request was in flight, don't add a second copy.
@@ -1020,13 +1160,15 @@
       lastReadAt = lastSeen; // it's the buyer's own message — obviously already "read"
       renderMessages_();
     } else {
-      if (attachment && attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+      attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
       messages = messages.filter(m => m !== optimistic);
       renderMessages_();
       statusEl.className = 'status-msg support-status error';
       statusEl.textContent = data.error || C.support.errorGeneric;
       input.value = text; // hand the text back so nothing typed is lost
-      if (attachment) setAttachment_(attachment.blob, attachment.mimeType, attachment.kind, attachment.fileName); // give the attachment back too
+      // Give the attachments back too — re-add without re-compressing or
+      // re-checking caps, since these already passed staging once.
+      attachments.forEach(a => addAttachment_(a.blob, a.mimeType, a.kind, a.fileName));
       autoGrow_();
       updateCharCount_();
     }
@@ -1061,7 +1203,7 @@
     statusEl.textContent = '';
     input.value = '';
     charCountEl.hidden = true;
-    clearAttachment_(); // don't carry a staged attachment over to whoever logs in next on a shared computer
+    clearAttachments_(); // don't carry staged attachments over to whoever logs in next on a shared computer
     if (emojiBtn) closeEmoji_();
     clearTimeout(pollTimer);
   }

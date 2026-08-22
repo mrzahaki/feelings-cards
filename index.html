@@ -546,20 +546,12 @@
 
   <div class="support-quick-replies" id="supportQuickReplies" hidden></div>
 
-  <!-- Preview of an image staged (via paste or drag-drop) but not yet
-       sent — populated/emptied by support.js. Never pre-filled server
-       side; purely a client-side staging area. -->
-  <div class="support-attach-preview" id="supportAttachPreview" hidden>
-    <img id="supportAttachPreviewImg" alt="Image attached to your message" hidden>
-    <video id="supportAttachPreviewVideo" class="support-attach-preview-video" muted playsinline hidden></video>
-    <div class="support-attach-file-chip" id="supportAttachFileChip" hidden>
-      <span class="support-attach-file-icon" aria-hidden="true">📎</span>
-      <span class="support-attach-file-name" id="supportAttachFileName"></span>
-    </div>
-    <button type="button" class="support-attach-remove" id="supportAttachRemove" aria-label="Remove attachment">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
-  </div>
+  <!-- Row of files staged (via the picker, paste, or drag-drop) but not
+       yet sent — up to a few at once. Built/emptied dynamically by
+       support.js (one chip per file, each with its own thumbnail/name
+       and remove button); never pre-filled server side, purely a
+       client-side staging area. -->
+  <div class="support-attach-preview" id="supportAttachPreview" hidden></div>
 
   <!-- Drop target overlay, shown only while a file is being dragged over
        the panel (see support.js's dragenter/dragover handling). -->
@@ -569,7 +561,7 @@
 
   <form class="support-form" id="supportForm">
     <label class="visually-hidden" for="supportInput">Message to support</label>
-    <input type="file" id="supportFileInput" class="visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+    <input type="file" id="supportFileInput" class="visually-hidden" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation">
 
     <div class="support-composer-tools">
       <button type="button" id="supportAttachBtn" class="support-tool-btn" aria-label="Attach a file">

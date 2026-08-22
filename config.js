@@ -311,7 +311,7 @@ window.SITE_CONFIG = {
     errorTooLong: "That message is too long.",
     charLimit: 3000,
 
-    // ---- attachments (paste or drag-and-drop into the chat) ----
+    // ---- attachments (paste, drag-and-drop, or multi-select into the chat) ----
     // Images: attachMaxBytesImage is enforced client-side AFTER the
     // browser-side compression step (see support.js) — it's a final
     // safety cap, not the size a buyer's original screenshot needs to
@@ -324,15 +324,27 @@ window.SITE_CONFIG = {
     attachMaxBytesVideo: 15000000,
     attachMaxBytesDoc: 8000000,
     attachMaxDimension: 1440, // longest side, in px, after client-side resize (images only)
+    // A single message can carry more than one file now — these three
+    // must stay in sync with apps-script-support.gs's
+    // MAX_ATTACHMENTS_PER_MESSAGE / MAX_VIDEOS_PER_MESSAGE /
+    // MAX_TOTAL_ATTACHMENT_BYTES. Client-side, these just make the error
+    // fast and friendly; the server enforces the same caps itself
+    // regardless of what this page sends.
+    attachMaxCount: 4,
+    attachMaxVideos: 1,
+    attachMaxBytesTotal: 20000000,
     attachAllowedLabel: "Images, short videos, or PDF/Word/Excel/PowerPoint/text files",
-    attachLabel: "Attach a file",
-    attachAriaLabel: "Attach a file",
+    attachLabel: "Attach files",
+    attachAriaLabel: "Attach files",
     attachRemoveLabel: "Remove attachment",
-    attachDropHint: "Drop file to attach",
+    attachDropHint: "Drop files to attach",
     errorAttachType: "Unsupported file type — try an image, video, or PDF/Office file.",
     errorAttachTooLarge: "That image is too large — try a smaller one or a screenshot instead of the original photo.",
     errorAttachTooLargeVideo: "That video is too large for chat (max ~15MB) — try a shorter clip or a lower resolution export.",
     errorAttachTooLargeDoc: "That file is too large for chat (max ~8MB).",
+    errorAttachTooLargeCombined: "Those files are too large combined (max ~{max}MB total per message).",
+    errorAttachTooMany: "You can attach up to {max} files per message.",
+    errorAttachTooManyVideos: "Only 1 video per message, please.",
     errorAttachGeneric: "Couldn't attach that file — please try again.",
 
     // ---- emoji picker ----
