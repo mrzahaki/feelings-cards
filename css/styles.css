@@ -341,13 +341,35 @@
   @media (max-width:640px){
     .lb-prev{left:6px;} .lb-next{right:6px;}
     .lb-nav{background:rgba(255,254,249,.9);}
+    /* .lb-close's default top:-14px/right:-14px pops it outside the
+       panel's own bounds — fine on desktop where the 24px .lightbox
+       padding leaves room, but on a narrow phone viewport that overflow
+       can push it past the screen edge (or under the browser's own UI),
+       making it unreachable. Pull it inside the panel on small screens
+       instead. */
+    .lb-close{
+      top:8px; right:8px;
+      width:34px; height:34px;
+      background:rgba(30,22,14,.55); border-color:transparent;
+      box-shadow:none;
+    }
   }
 
   /* ---------- Support attachment viewer ---------- */
   /* Shares .lightbox/.lightbox-panel's backdrop + pop-in animation, just
      roomier (this is for actually reading/inspecting one photo or video,
      not a fixed-size card) and with a caption+download footer instead of
-     prev/next nav. See support.js for open/close wiring. */
+     prev/next nav. See support.js for open/close wiring.
+     z-index: .lightbox's base z-index (100) is LOWER than the support
+     chat stack (.support-launcher 130 / .support-backdrop 135 /
+     .support-panel 140) — since this viewer is opened from inside an
+     already-open chat panel, it needs to sit ABOVE that whole stack, or
+     it renders invisibly underneath the panel (tapping an image looks
+     like it does nothing; closing the chat afterwards reveals it was
+     open the whole time). 150 clears the support stack while staying
+     under the site's top-level auth/orders modals (z-index 200), which
+     should always win if both ever happen to be open. */
+  .support-attach-lightbox{z-index:150;}
   .support-attach-lightbox-panel{
     max-width:min(92vw, 760px);
     max-height:92vh;
