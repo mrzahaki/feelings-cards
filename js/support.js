@@ -101,6 +101,34 @@
   const remoteAttachmentCache = new Map();
   const attachmentFetchesInFlight = new Set();
 
+  // v10: even with lazy-load-on-scroll (below), a buyer opening the
+  // panel can still land on several image messages in view at once (a
+  // short thread, or a fast scroll/resize) — each one would otherwise
+  // fire its own fetchAttachment call to Apps Script simultaneously.
+  // This caps how many are ever in flight together; everything past the
+  // cap just waits in attachmentFetchQueue_ and starts as soon as a slot
+  // frees up. Keeps this script's per-buyer (and, at scale, aggregate)
+  // request volume small and predictable regardless of how many images
+  // happen to be visible at once.
+  const MAX_CONCURRENT_ATTACHMENT_FETCHES = 2;
+  const attachmentFetchQueue_ = [];
+
+  function queueAttachmentFetch_(attachmentId) {
+    if (attachmentFetchesInFlight.has(attachmentId) || remoteAttachmentCache.has(attachmentId) || attachmentFetchQueue_.includes(attachmentId)) return;
+    attachmentFetchQueue_.push(attachmentId);
+    pumpAttachmentQueue_();
+  }
+
+  function pumpAttachmentQueue_() {
+    while (attachmentFetchesInFlight.size < MAX_CONCURRENT_ATTACHMENT_FETCHES && attachmentFetchQueue_.length) {
+      const id = attachmentFetchQueue_.shift();
+      // Could already be resolved/in-flight by the time its turn comes
+      // up (e.g. queued twice before the first attempt finished).
+      if (attachmentFetchesInFlight.has(id) || remoteAttachmentCache.has(id)) continue;
+      loadRemoteAttachment_(id); // pumps the queue again itself, in its finally block
+    }
+  }
+
   // Support-sent attachments used to be fetched the instant their chip
   // was RENDERED, not when it was actually SEEN — so opening a chat with
   // a long history fired one fetchAttachment call per image in the
@@ -115,7 +143,7 @@
           if (!entry.isIntersecting) return;
           attachmentObserver.unobserve(entry.target);
           const id = entry.target.dataset.attachmentId;
-          if (id) loadRemoteAttachment_(id);
+          if (id) queueAttachmentFetch_(id);
         });
       }, { root: messagesEl, rootMargin: '150px', threshold: 0.01 })
     : null;
@@ -359,7 +387,7 @@
       chip.textContent = C.support.attachmentRetryLabel || "Couldn't load — tap to retry";
       chip.addEventListener('click', () => {
         remoteAttachmentCache.delete(attachmentId);
-        loadRemoteAttachment_(attachmentId);
+        queueAttachmentFetch_(attachmentId);
         renderMessages_({ stickToBottom: isNearBottom_() });
       });
       attWrap.appendChild(chip);
@@ -374,7 +402,7 @@
       chip.dataset.attachmentId = attachmentId;
       attWrap.appendChild(chip);
       if (attachmentObserver) attachmentObserver.observe(chip);
-      else loadRemoteAttachment_(attachmentId); // no IntersectionObserver support: fall back to the old eager behavior
+      else queueAttachmentFetch_(attachmentId); // no IntersectionObserver support: still respect the concurrency cap
     }
     return attWrap;
   }
@@ -578,6 +606,7 @@
       remoteAttachmentCache.set(attachmentId, { status: 'error' });
     } finally {
       attachmentFetchesInFlight.delete(attachmentId);
+      pumpAttachmentQueue_(); // a slot just freed up — let the next queued attachment (if any) start
       // Only worth a re-render if the panel is actually open — a
       // background poll that happened to bring in a support attachment
       // will just show it correctly next time the buyer opens the panel.
