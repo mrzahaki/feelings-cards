@@ -288,6 +288,19 @@ window.SITE_CONFIG = {
     invoiceEndpoint: "https://script.google.com/macros/s/AKfycbxr-m6hBArXqw3AhbFNUs2xxgOsNifYK7hK4jpuhI2QHw4vOMQoIgPVn0CE2QaMTrw/exec",
   },
 
+  // ---- analytics: lightweight page-visit ping -----------------------------
+  // Reuses apps-script-support.gs's endpoint (below) rather than standing up
+  // a fifth Apps Script project just for this — that script now has a
+  // 'pageview' action alongside 'send'/'poll'/'fetchAttachment'. Fire-and-
+  // forget: main.js never awaits it and swallows any error, so a failed or
+  // slow ping can never affect page load. Powers the "👀 Page visits" line
+  // in the Telegram bot's /stats panel. Set enabled:false to turn it off
+  // entirely (e.g. while testing) without touching main.js.
+  analytics: {
+    enabled: true,
+    endpoint: "https://script.google.com/macros/s/AKfycbw-OEzryxjH_xjBJb2onsikRVw2XCsK5Geub_PSC2WdkNxIX0a63x67F1kQ6U_E5JHQBQ/exec",
+  },
+
   // ---- support chat (logged-in buyers only) --------------------------------
   // Endpoint = apps-script-support.gs's Web App /exec URL (a fourth,
   // separate Apps Script project — see that file's SETUP comments).

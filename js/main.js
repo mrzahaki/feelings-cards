@@ -1,5 +1,20 @@
   const C = window.SITE_CONFIG;
 
+  // ---- Page-visit ping (config.js -> analytics) ----
+  // Fire-and-forget: never awaited, and any failure is swallowed, so a
+  // blocked/slow/failed ping can never delay or break the page for a real
+  // visitor. Feeds the "👀 Page visits" figure in the Telegram bot's
+  // /stats panel (see apps-script-support.gs's handlePageview_). Sent once
+  // per page load — this is a visit counter, not a per-visitor tracker: it
+  // carries no cookie, id, or fingerprint of any kind.
+  if (C.analytics && C.analytics.enabled && C.analytics.endpoint) {
+    fetch(C.analytics.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight, same reasoning as the checkout call below
+      body: JSON.stringify({ action: 'pageview' })
+    }).catch(() => {});
+  }
+
   // ---- Gallery grid + lightbox (cards come from config.js -> gallery.cards) ----
   const cards = C.gallery.cards;
 
