@@ -1574,6 +1574,13 @@
   }
   .support-msg-user .support-msg-file-chip{background:rgba(255,255,255,.18);}
   .support-msg-file-chip-static{cursor:default;}
+  /* The retry chip is a real <button> (needs to be focusable/clickable
+     with a keyboard, unlike the other static chips) — reset the native
+     button chrome so it still just looks like the other chips. */
+  .support-msg-file-chip-retry{
+    border:none; font:inherit; cursor:pointer; text-align:left;
+  }
+  .support-msg-file-chip-retry:focus-visible{outline:2px solid currentColor; outline-offset:2px;}
   @media (hover:hover) and (pointer:fine){
     .support-msg-file-chip:not(.support-msg-file-chip-static):hover{background:rgba(0,0,0,.1);}
     .support-msg-user .support-msg-file-chip:not(.support-msg-file-chip-static):hover{background:rgba(255,255,255,.26);}

@@ -101,6 +101,25 @@
   const remoteAttachmentCache = new Map();
   const attachmentFetchesInFlight = new Set();
 
+  // Support-sent attachments used to be fetched the instant their chip
+  // was RENDERED, not when it was actually SEEN — so opening a chat with
+  // a long history fired one fetchAttachment call per image in the
+  // entire thread, all at once, on every single page load. This
+  // observer defers that fetch until the chip actually scrolls into (or
+  // near) view instead, the same way lazy-loaded images work anywhere
+  // else. root: messagesEl since that's the scrolling element, not the
+  // page/viewport.
+  const attachmentObserver = 'IntersectionObserver' in window
+    ? new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          attachmentObserver.unobserve(entry.target);
+          const id = entry.target.dataset.attachmentId;
+          if (id) loadRemoteAttachment_(id);
+        });
+      }, { root: messagesEl, rootMargin: '150px', threshold: 0.01 })
+    : null;
+
   // ---- polling ----
   // Open + focused: poll often for a responsive feel. Closed (but still
   // logged in): poll much less often, just to surface the unread badge
@@ -330,13 +349,32 @@
     if (entry && entry.status === 'done') {
       attWrap.appendChild(buildRemoteAttachmentEl_(entry));
     } else if (entry && entry.status === 'error') {
-      return document.createComment(''); // text placeholder alone is still shown by the caller
+      // A real failure (Telegram fetch itself failed, or the buyer's own
+      // rate limit kicked in) rather than "hasn't been asked for yet" —
+      // give a way to try again instead of silently showing nothing but
+      // the text placeholder.
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'support-msg-file-chip support-msg-file-chip-static support-msg-file-chip-retry';
+      chip.textContent = C.support.attachmentRetryLabel || "Couldn't load — tap to retry";
+      chip.addEventListener('click', () => {
+        remoteAttachmentCache.delete(attachmentId);
+        loadRemoteAttachment_(attachmentId);
+        renderMessages_({ stickToBottom: isNearBottom_() });
+      });
+      attWrap.appendChild(chip);
     } else {
+      // Not fetched yet: show the loading chip, but don't fetch until
+      // this chip actually scrolls into view (see attachmentObserver
+      // above) — a message list full of old attachments shouldn't fire
+      // a fetch for every single one just because it got rendered.
       const chip = document.createElement('span');
       chip.className = 'support-msg-file-chip support-msg-file-chip-static';
       chip.textContent = C.support.attachmentLoadingLabel || 'Loading attachment…';
+      chip.dataset.attachmentId = attachmentId;
       attWrap.appendChild(chip);
-      loadRemoteAttachment_(attachmentId);
+      if (attachmentObserver) attachmentObserver.observe(chip);
+      else loadRemoteAttachment_(attachmentId); // no IntersectionObserver support: fall back to the old eager behavior
     }
     return attWrap;
   }

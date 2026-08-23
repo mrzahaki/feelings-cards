@@ -347,9 +347,14 @@ window.SITE_CONFIG = {
     errorAttachTooManyVideos: "Only 1 video per message, please.",
     errorAttachGeneric: "Couldn't attach that file — please try again.",
     // Shown briefly while the widget fetches a file support sent you from
-    // Telegram (see apps-script-support.gs's v4 notes) — it's a one-time
-    // fetch per attachment, not a persistent loading state.
+    // Telegram (see apps-script-support.gs's v9 notes) — it only starts
+    // once the attachment actually scrolls into view, and it's a
+    // one-time fetch per attachment, not a persistent loading state.
     attachmentLoadingLabel: "Loading attachment…",
+    // Shown instead, tappable, if that fetch genuinely fails (e.g. a
+    // network hiccup or a rate limit) — lets the buyer retry without
+    // reloading the whole page.
+    attachmentRetryLabel: "Couldn't load — tap to retry",
 
     // ---- emoji picker ----
     emojiLabel: "Add an emoji",
